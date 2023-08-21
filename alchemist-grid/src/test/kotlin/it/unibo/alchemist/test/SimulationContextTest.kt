@@ -29,8 +29,9 @@ class SimulationContextTest : StringSpec({
     "Simulation dependencies are correctly loaded" {
         val simulationContext = getSimulationContext(YAML_CONFIG_PATH)
         simulationContext.dependencies.size shouldBeExactly 2
-        simulationContext.dependencies[DEPENDENCY_FILE_PATH] shouldBe
-            Files.readAllBytes(Path.of(ResourceLoader.getResource(DEPENDENCY_FILE_PATH).toURI()))
+        simulationContext.dependencies[DEPENDENCY_FILE_PATH] shouldBe Files.readAllBytes(
+            Path.of(ResourceLoader.getResource(DEPENDENCY_FILE_PATH).toURI()),
+        )
     }
 }) {
     companion object {
