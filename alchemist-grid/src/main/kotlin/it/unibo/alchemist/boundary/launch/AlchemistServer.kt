@@ -8,32 +8,25 @@
  */
 package it.unibo.alchemist.boundary.launch
 
-import it.unibo.alchemist.AlchemistExecutionOptions
-import it.unibo.alchemist.boundary.launch.Validation.Invalid
-import it.unibo.alchemist.boundary.launch.Validation.OK
-import org.apache.ignite.startup.cmdline.CommandLineStartup
+import io.etcd.jetcd.Client
+import it.unibo.alchemist.boundary.Loader
+import it.unibo.alchemist.boundary.launchers.SimulationLauncher
+import java.util.concurrent.CountDownLatch
 
 /**
  * Launches a service waiting for simulations to be sent over the network.
  */
-object AlchemistServer : AbstractLauncher() {
+object AlchemistServer : SimulationLauncher() {
+    override fun launch(loader: Loader) {
+        // TODO: retrieve endpoints from configuration files
+        val client = Client.builder().endpoints(
+            "http://localhost:10001",
+            "http://localhost:10002",
+            "http://localhost:10003",
+        ).build()
+        println("Connection established")
 
-    override val name = "Alchemist grid computing server"
-
-    override fun validate(currentOptions: AlchemistExecutionOptions): Validation = with(currentOptions) {
-        when {
-            configuration != null -> incompatibleWith("direct execution of a simulation file")
-            variables.isNotEmpty() -> incompatibleWith("simulation variables set")
-            batch -> incompatibleWith("batch mode")
-            distributed != null -> incompatibleWith("distributed execution")
-            graphics != null -> incompatibleWith("graphic effects enabled")
-            help -> Invalid("There is no specific help for server mode")
-            server == null -> Invalid("No Ignite configuration file specified")
-            parallelism != AlchemistExecutionOptions.defaultParallelism -> incompatibleWith("custom parallelism")
-            endTime != AlchemistExecutionOptions.defaultEndTime -> incompatibleWith("simulation end time")
-            else -> OK()
-        }
+        client.kvClient
+        CountDownLatch(1).await()
     }
-
-    override fun launch(parameters: AlchemistExecutionOptions) = CommandLineStartup.main(arrayOf(parameters.server))
 }

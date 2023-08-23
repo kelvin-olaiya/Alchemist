@@ -29,6 +29,8 @@ dependencies {
     implementation(libs.guava)
     implementation(libs.ignite.spring)
     implementation(libs.ignite.indexing)
+    implementation(libs.jetcd)
+    testImplementation(libs.docker.compose.rule)
     testImplementation(incarnation("sapere"))
 }
 

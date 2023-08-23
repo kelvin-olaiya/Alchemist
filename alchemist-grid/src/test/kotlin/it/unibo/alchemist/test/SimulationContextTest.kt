@@ -12,12 +12,8 @@ package it.unibo.alchemist.test
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import io.kotest.matchers.shouldBe
-import it.unibo.alchemist.boundary.LoadAlchemist
-import it.unibo.alchemist.boundary.grid.simulation.SimulationContext
-import it.unibo.alchemist.boundary.grid.simulation.SimulationContextFactory
-import it.unibo.alchemist.model.Time
+import it.unibo.alchemist.test.utils.GridTestUtils.getSimulationContext
 import org.kaikikm.threadresloader.ResourceLoader
-import java.net.URL
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -38,12 +34,5 @@ class SimulationContextTest : StringSpec({
 
         private const val YAML_CONFIG_PATH = "config/00-dependencies.yml"
         private const val DEPENDENCY_FILE_PATH = "config/dependencies_test.txt"
-
-        private fun getLoader(yaml: URL) = LoadAlchemist.from(yaml)
-
-        private fun getSimulationContext(yamlConfigurationPath: String): SimulationContext {
-            val loader = getLoader(ResourceLoader.getResource(yamlConfigurationPath))
-            return SimulationContextFactory.newSimulationContext(loader, Double.MAX_VALUE, Time.INFINITY)
-        }
     }
 }
