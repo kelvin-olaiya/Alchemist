@@ -8,10 +8,10 @@
  */
 package it.unibo.alchemist.boundary.launch
 
+import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.boundary.launchers.SimulationLauncher
-import java.util.concurrent.CountDownLatch
 
 /**
  * Launches a service waiting for simulations to be sent over the network.
@@ -26,7 +26,11 @@ object AlchemistServer : SimulationLauncher() {
         ).build()
         println("Connection established")
 
-        client.kvClient
-        CountDownLatch(1).await()
+        val kvClient = client.kvClient
+        kvClient.put(ByteSequence.from("apply".toByteArray()), ByteSequence.from("12".toByteArray()))
+        println("I have put something on the db")
+        println(kvClient.get(ByteSequence.from("apply".toByteArray())).get().count)
+        println("DONE")
+        client.close()
     }
 }
