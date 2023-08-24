@@ -6,12 +6,11 @@
  * GNU General Public License, with a linking exception,
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
-package it.unibo.alchemist.boundary.launch
+package it.unibo.alchemist.boundary.launchers
 
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import it.unibo.alchemist.boundary.Loader
-import it.unibo.alchemist.boundary.launchers.SimulationLauncher
 
 /**
  * Launches a service waiting for simulations to be sent over the network.
