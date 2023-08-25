@@ -9,12 +9,6 @@
 package it.unibo.alchemist.boundary.launchers
 
 import it.unibo.alchemist.boundary.Loader
-import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
-import it.unibo.alchemist.boundary.grid.config.LocalGeneralSimulationConfig
-import it.unibo.alchemist.boundary.grid.config.SimulationConfigImpl
-import it.unibo.alchemist.boundary.grid.simulation.SimulationSetImpl
-import it.unibo.alchemist.model.Time
-import java.nio.file.Paths
 
 /**
  * Launches a simulation set on a cluster of Alchemist nodes running in server mode.
@@ -25,17 +19,10 @@ class DistributedExecution(
 ) : SimulationLauncher() {
 
     override fun launch(loader: Loader) {
-        val simulationConfig = LocalGeneralSimulationConfig(
-            loader,
-            Time.INFINITY,
-        )
-        val simConfigs = loader.variables.cartesianProductOf(variables).map(::SimulationConfigImpl)
-        val simulationSet = SimulationSetImpl(
-            simulationConfig,
-            simConfigs,
-        )
-        val cluster =
+        /*val simulationConfig = SimulationConfigFactory.newSimulationConfig(loader, Long.MAX_VALUE, Time.INFINITY)
+        val simConfigs = loader.variables.cartesianProductOf(variables).map(::SimulationInitializer)*/
+        /*val cluster =
             ClusterImpl(Paths.get(requireNotNull(distributedConfigPath) { "No remote configuration file" }))
-        cluster.getWorkersSet(simulationSet.computeComplexity()).distributeSimulations(simulationSet)
+        cluster.getWorkersSet(simulationSet.computeComplexity()).distributeSimulations(simulationSet)*/
     }
 }

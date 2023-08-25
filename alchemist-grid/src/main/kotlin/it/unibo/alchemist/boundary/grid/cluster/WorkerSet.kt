@@ -9,7 +9,7 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.simulation.SimulationContext
+import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
@@ -18,14 +18,14 @@ interface WorkerSet {
     /**
      * The remote servers in this [WorkerSet].
      */
-    val servers: Collection<AlchemistRemoteServer>
+    val servers: Collection<RemoteServer>
 
     /**
      * Dispatch the [SimulationInitializer]s for the
-     * provided [SimulationContext].
+     * provided [SimulationConfig].
      */
     fun dispatchJobs(
-        simulationContext: SimulationContext,
+        simulationConfig: SimulationConfig,
         simulationInitializers: Collection<SimulationInitializer>,
     ): Collection<UUID>
 }

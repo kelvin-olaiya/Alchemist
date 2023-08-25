@@ -12,9 +12,16 @@ package it.unibo.alchemist.boundary.grid.cluster
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
-class AlchemistRemoteServer(override val serverID: UUID) : RemoteServer {
+interface RemoteServer {
 
-    override fun submitJob(simulationID: UUID, parameters: SimulationInitializer): UUID {
-        TODO("Not yet implemented")
-    }
+    /**
+     * The server unique id.
+     */
+    val serverID: UUID
+
+    /**
+     * Submit the parameters for the simulation with the provided [simulationID].
+     * Return the job id for future reference.
+     */
+    fun submitJob(simulationID: UUID, parameters: SimulationInitializer): UUID
 }

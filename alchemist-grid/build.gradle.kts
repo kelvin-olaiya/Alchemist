@@ -18,6 +18,10 @@ import Libs.incarnation
  * as described in the file LICENSE in the Alchemist distribution"s top directory.
  */
 
+plugins {
+    alias(libs.plugins.protobuf)
+}
+
 dependencies {
     api(libs.ignite.core)
     implementation(rootProject)
@@ -30,8 +34,13 @@ dependencies {
     implementation(libs.ignite.spring)
     implementation(libs.ignite.indexing)
     implementation(libs.jetcd)
+    implementation(libs.protobuf.kotlin)
     testImplementation(libs.docker.compose.rule)
     testImplementation(incarnation("sapere"))
+}
+
+protobuf {
+    protoc { artifact = libs.protoc.get().toString() }
 }
 
 publishing.publications {

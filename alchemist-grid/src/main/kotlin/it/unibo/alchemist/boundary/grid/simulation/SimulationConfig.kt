@@ -12,7 +12,7 @@ package it.unibo.alchemist.boundary.grid.simulation
 import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.model.Time
 
-interface SimulationContext {
+interface SimulationConfig {
 
     /**
      * The loader for this simulation context.
@@ -22,7 +22,7 @@ interface SimulationContext {
     /**
      * The end step for this simulation context.
      */
-    val endStep: Double
+    val endStep: Long
 
     /**
      * The end time for this simulation context.

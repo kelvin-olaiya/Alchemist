@@ -17,4 +17,4 @@ import java.io.Serializable
  *
  * [variables] a combination of variables. Typically, derived from a cartesian product.
  */
-data class SimulationInitializer(val variables: Map<String, Serializable>)
+data class SimulationInitializer(val variables: Map<String, Serializable?>)

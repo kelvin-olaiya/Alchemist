@@ -15,11 +15,11 @@ import org.kaikikm.threadresloader.ResourceLoader
 import java.nio.file.Files
 import java.nio.file.Path
 
-object SimulationContextFactory {
+object SimulationConfigFactory {
 
-    fun newSimulationContext(loader: Loader, endStep: Double, endTime: Time) = object : SimulationContext {
+    fun newSimulationConfig(loader: Loader, endStep: Long, endTime: Time) = object : SimulationConfig {
         override val loader = loader
-        override val endStep = endStep
+        override val endStep: Long = endStep
         override val endTime = endTime
         override val dependencies = loader.remoteDependencies.associateWith {
             val dependencyURL = checkNotNull(ResourceLoader.getResource(it)) { "Could not find dependency file $it" }

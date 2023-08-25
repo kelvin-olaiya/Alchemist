@@ -21,5 +21,5 @@ interface Cluster {
     /**
      * The remote servers currently joining the cluster.
      */
-    val servers: Collection<AlchemistRemoteServer>
+    val servers: Collection<RemoteServer>
 }

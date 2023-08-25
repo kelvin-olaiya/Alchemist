@@ -17,8 +17,8 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import it.unibo.alchemist.Alchemist
 import it.unibo.alchemist.boundary.LoadAlchemist
-import it.unibo.alchemist.boundary.grid.simulation.SimulationContext
-import it.unibo.alchemist.boundary.grid.simulation.SimulationContextFactory
+import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
+import it.unibo.alchemist.boundary.grid.simulation.SimulationConfigFactory
 import it.unibo.alchemist.model.Time
 import org.kaikikm.threadresloader.ResourceLoader
 import java.io.File
@@ -29,9 +29,9 @@ object GridTestUtils {
 
     fun getLoader(yaml: URL) = LoadAlchemist.from(yaml)
 
-    fun getSimulationContext(yamlConfigurationPath: String): SimulationContext {
+    fun getSimulationContext(yamlConfigurationPath: String): SimulationConfig {
         val loader = getLoader(ResourceLoader.getResource(yamlConfigurationPath))
-        return SimulationContextFactory.newSimulationContext(loader, Double.MAX_VALUE, Time.INFINITY)
+        return SimulationConfigFactory.newSimulationConfig(loader, Long.MAX_VALUE, Time.INFINITY)
     }
 
     fun getDockerExtension(composeFilePath: String) =
@@ -47,11 +47,18 @@ object GridTestUtils {
         }
     }
 
-    fun startAlchemistProcess(vararg commandLine: String): Process {
+    fun startAlchemistProcess(vararg commandLine: String): TestableProcess {
         val javaExecutable = File(System.getProperty("java.home") + "/bin/java").absolutePath
         val classpath = System.getProperty("java.class.path")
-        return ProcessBuilder(javaExecutable, "-classpath", classpath, Alchemist::class.jvmName, *commandLine)
-            .redirectOutput(File("test-output.txt"))
+        val prefix = "alchemist-test#${commandLine.hashCode()}"
+        val stdOut = File.createTempFile("$prefix-stdout", ".txt")
+        stdOut.deleteOnExit()
+        val stdErr = File.createTempFile("$prefix-stderr", ".txt")
+        stdErr.deleteOnExit()
+        val process = ProcessBuilder(javaExecutable, "-classpath", classpath, Alchemist::class.jvmName, *commandLine)
+            .redirectOutput(ProcessBuilder.Redirect.to(stdOut))
+            .redirectError(ProcessBuilder.Redirect.to(stdErr))
             .start()
+        return TestableProcess(process, stdOut, stdErr)
     }
 }

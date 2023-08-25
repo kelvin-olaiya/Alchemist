@@ -10,6 +10,8 @@
 package it.unibo.alchemist.test
 
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.ints.shouldBeExactly
+import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterEtcdManagerImpl
 import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
 import it.unibo.alchemist.test.utils.GridTestUtils.startAlchemistProcess
 import java.nio.file.Path
@@ -19,16 +21,18 @@ class ClusterTest : StringSpec({
     extensions(getDockerExtension(composeFilePath))
 
     "Cluster exposes correct number of servers" {
-        startAlchemistProcess("run", serverConfigFile).waitFor()
-        // cluster.servers.count() shouldBeExactly SERVERS_TO_LAUNCH
-    }
-
-    afterTest {
-        println("Test custom after")
+        val processes = (0 until SERVERS_TO_LAUNCH).map {
+            startAlchemistProcess("run", serverConfigFile, "--verbosity", "debug")
+        }.toList()
+        processes.forEach { it.awaitOutputContains("Registered to cluster") }
+        val servers = ClusterEtcdManagerImpl(ETCD_SERVER_ENDPOINTS).servers
+        servers.size shouldBeExactly SERVERS_TO_LAUNCH
+        processes.forEach { it.close() }
     }
 }) {
     companion object {
         const val SERVERS_TO_LAUNCH = 2
+        val ETCD_SERVER_ENDPOINTS = listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
         val serverConfigFile = Path.of("src", "test", "resources", "server-config.yml").toString()
         val composeFilePath = Path.of("src", "test", "resources", "docker-compose.yml").toString()
     }

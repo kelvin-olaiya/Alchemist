@@ -7,14 +7,13 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster
+package it.unibo.alchemist.boundary.grid.cluster.manager
 
-import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
-class AlchemistRemoteServer(override val serverID: UUID) : RemoteServer {
+interface EtcdServerManager : ClusterEtcdManager {
 
-    override fun submitJob(simulationID: UUID, parameters: SimulationInitializer): UUID {
-        TODO("Not yet implemented")
-    }
+    fun join(serverID: UUID, serverMetadata: ServerMetadata)
+
+    fun leave(serverID: UUID)
 }

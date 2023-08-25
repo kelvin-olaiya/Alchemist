@@ -8,28 +8,26 @@
  */
 package it.unibo.alchemist.boundary.launchers
 
-import io.etcd.jetcd.ByteSequence
-import io.etcd.jetcd.Client
 import it.unibo.alchemist.boundary.Loader
+import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterEtcdManagerImpl
+import it.unibo.alchemist.boundary.grid.cluster.manager.ServerMetadata
+import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Launches a service waiting for simulations to be sent over the network.
  */
-object AlchemistServer : SimulationLauncher() {
-    override fun launch(loader: Loader) {
-        // TODO: retrieve endpoints from configuration files
-        val client = Client.builder().endpoints(
-            "http://localhost:10001",
-            "http://localhost:10002",
-            "http://localhost:10003",
-        ).build()
-        println("Connection established")
+class AlchemistServer : SimulationLauncher() {
+    private val logger = LoggerFactory.getLogger(AlchemistServer::class.java)
 
-        val kvClient = client.kvClient
-        kvClient.put(ByteSequence.from("apply".toByteArray()), ByteSequence.from("12".toByteArray()))
-        println("I have put something on the db")
-        println(kvClient.get(ByteSequence.from("apply".toByteArray())).get().count)
-        println("DONE")
-        client.close()
+    override fun launch(loader: Loader) {
+        val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
+        val serverID = UUID.randomUUID()
+        logger.debug("Server assigned ID: {}", serverID)
+        with(ClusterEtcdManagerImpl(endpoints)) {
+            logger.debug("Registering to cluster")
+            join(serverID, ServerMetadata("prova"))
+            logger.debug("Registered to cluster")
+        }
     }
 }
