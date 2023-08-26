@@ -9,12 +9,4 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.manager
 
-import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
-
-interface ClusterEtcdManager {
-
-    /**
-     * Returns a collection of server in the cluster.
-     */
-    val servers: Collection<RemoteServer>
-}
+interface ClusterInfoManagerClientFacade : ClusterInfoManager

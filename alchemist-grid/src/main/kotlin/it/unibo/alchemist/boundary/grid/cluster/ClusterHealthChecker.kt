@@ -7,13 +7,12 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster.manager
+package it.unibo.alchemist.boundary.grid.cluster
 
-import java.util.UUID
-
-interface EtcdServerManager : ClusterEtcdManager {
-
-    fun join(serverID: UUID, serverMetadata: ServerMetadata)
-
-    fun leave(serverID: UUID)
+class ClusterHealthChecker(
+    val timeoutSeconds: Long,
+    val maxReplyMiss: Int,
+) : Runnable {
+    override fun run() {
+    }
 }

@@ -9,7 +9,8 @@
 package it.unibo.alchemist.boundary.launchers
 
 import it.unibo.alchemist.boundary.Loader
-import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterEtcdManagerImpl
+import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterManagerImpl
+import it.unibo.alchemist.boundary.grid.cluster.manager.EtcdHelper
 import it.unibo.alchemist.boundary.grid.cluster.manager.ServerMetadata
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -24,7 +25,7 @@ class AlchemistServer : SimulationLauncher() {
         val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
         val serverID = UUID.randomUUID()
         logger.debug("Server assigned ID: {}", serverID)
-        with(ClusterEtcdManagerImpl(endpoints)) {
+        with(ClusterManagerImpl(EtcdHelper(endpoints))) {
             logger.debug("Registering to cluster")
             join(serverID, ServerMetadata("prova"))
             logger.debug("Registered to cluster")
