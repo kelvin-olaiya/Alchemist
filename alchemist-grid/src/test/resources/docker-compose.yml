@@ -48,7 +48,15 @@ services:
       ETCD_INITIAL_CLUSTER: node_1=http://node_1:2380,node_2=http://node_2:2380,node_3=http://node_3:2380
       ALLOW_NONE_AUTHENTICATION: 'yes'
       ETCD_INITIAL_CLUSTER_STATE: new
-
+  rabbitmq-service:
+    image: rabbitmq:3-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: alchemist
+      RABBITMQ_DEFAULT_PASS: alchemist
+    ports:
+      - "5672:5672"   # the port RabbitMQ will listen on
+      - "8080:15672"  # the port the dashboard web service will be available from
 volumes:
   node_1_volume:
   node_2_volume:
