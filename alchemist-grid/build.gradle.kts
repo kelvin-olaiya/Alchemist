@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.ignite.indexing)
     implementation(libs.jetcd)
     implementation(libs.protobuf.kotlin)
+    implementation(libs.rabbitmq)
     testImplementation(libs.docker.compose.rule)
     testImplementation(incarnation("sapere"))
 }
