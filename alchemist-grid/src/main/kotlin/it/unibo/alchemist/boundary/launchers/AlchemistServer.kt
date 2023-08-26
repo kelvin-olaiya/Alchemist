@@ -8,6 +8,7 @@
  */
 package it.unibo.alchemist.boundary.launchers
 
+import com.rabbitmq.client.ConnectionFactory
 import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterManagerImpl
 import it.unibo.alchemist.boundary.grid.cluster.manager.EtcdHelper
@@ -30,5 +31,19 @@ class AlchemistServer : SimulationLauncher() {
             join(serverID, ServerMetadata("prova"))
             logger.debug("Registered to cluster")
         }
+        val connectionFactory = ConnectionFactory()
+        connectionFactory.username = "guest"
+        connectionFactory.password = "guest"
+        connectionFactory.host = "localhost"
+        connectionFactory.port = 5672
+        connectionFactory.virtualHost = "/"
+        val connection = connectionFactory.newConnection()
+        val channel = connection.createChannel()
+        val healthQueue = "$serverID-health"
+        channel.queueDeclare(healthQueue, false, false, false, null)
+        channel.basicConsume(healthQueue, false, { _, delivery ->
+            println(String(delivery.body))
+        }, { _ -> })
+        logger.debug("health-queue registered $healthQueue")
     }
 }

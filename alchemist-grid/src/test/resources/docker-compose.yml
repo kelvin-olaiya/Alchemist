@@ -1,4 +1,5 @@
 version: '3.9'
+name: "alchemist-grid-test"
 services:
   node_1:
     image: bitnami/etcd
@@ -51,12 +52,14 @@ services:
   rabbitmq-service:
     image: rabbitmq:3-management
     restart: always
-    environment:
-      RABBITMQ_DEFAULT_USER: alchemist
-      RABBITMQ_DEFAULT_PASS: alchemist
     ports:
       - "5672:5672"   # the port RabbitMQ will listen on
       - "8080:15672"  # the port the dashboard web service will be available from
+    healthcheck:
+      test: rabbitmq-diagnostics -q status
+      interval: 10s
+      timeout: 10s
+      retries: 5
 volumes:
   node_1_volume:
   node_2_volume:

@@ -34,11 +34,12 @@ class ClusterTest : StringSpec({
     "Cluster exposes correct number of servers after shutdown" {
         val processes = startServers(SERVERS_TO_LAUNCH)
         processes.forEach { it.awaitOutputContains("Registered to cluster") }
-        processes.first().close()
-        Thread.sleep(3000)
+        val processToShutdown = processes.first()
+        val remainingProcesses = processes - processToShutdown
+        processToShutdown.close()
+        remainingProcesses.forEach { it.awaitOutputContains("health-queue registered") }
         val cluster = ClusterImpl(ClusterManagerImpl(etcdHelper))
         cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH - 1
-        processes.forEach { it.close() }
     }
 }) {
     companion object {

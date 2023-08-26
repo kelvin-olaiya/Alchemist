@@ -23,6 +23,7 @@ class TestableProcess(
     private val stdout: File,
     private val stderr: File,
 ) : AutoCloseable {
+
     private fun <R> readAll(file: File, f: Collector<in String, *, R>): R {
         try {
             BufferedReader(FileReader(file)).use { reader ->
@@ -85,4 +86,6 @@ class TestableProcess(
             // busy wait
         }
     }
+
+    fun waitFor() = process.waitFor()
 }
