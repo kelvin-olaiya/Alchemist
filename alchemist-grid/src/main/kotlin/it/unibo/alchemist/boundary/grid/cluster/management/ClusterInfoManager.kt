@@ -10,6 +10,9 @@
 package it.unibo.alchemist.boundary.grid.cluster.management
 
 import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
+import it.unibo.alchemist.boundary.grid.cluster.ServerMetadata
+import java.util.Optional
+import java.util.UUID
 
 interface ClusterInfoManager {
 
@@ -17,4 +20,9 @@ interface ClusterInfoManager {
      * Returns a collection of server in the cluster.
      */
     val servers: Collection<RemoteServer>
+
+    /**
+     * Returns the server's metadata
+     */
+    fun metadataOf(serverID: UUID): Optional<ServerMetadata>
 }

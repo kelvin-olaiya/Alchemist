@@ -9,6 +9,7 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.management
 
+import it.unibo.alchemist.boundary.grid.cluster.ServerMetadata
 import java.util.UUID
 
 interface ClusterInfoManagerServerFacade : ClusterInfoManager {

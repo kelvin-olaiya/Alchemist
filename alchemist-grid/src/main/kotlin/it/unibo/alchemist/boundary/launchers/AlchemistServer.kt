@@ -15,7 +15,6 @@ import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.channel
 import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.getQueueNameFor
 import it.unibo.alchemist.boundary.grid.cluster.management.ClusterHealthChecker
 import it.unibo.alchemist.boundary.grid.cluster.management.ClusterManagerImpl
-import it.unibo.alchemist.boundary.grid.cluster.management.ServerMetadata
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
 import it.unibo.alchemist.proto.Common
@@ -40,7 +39,7 @@ class AlchemistServer : SimulationLauncher() {
         )
         val clusterManager = ClusterManagerImpl(EtcdKVStore(endpoints))
         logger.debug("Registering to cluster")
-        clusterManager.join(serverID, ServerMetadata(metadata))
+        clusterManager.join(serverID, metadata)
         logger.debug("Registered to cluster")
         channel.queueDeclare(healthQueue, false, false, false, null)
         channel.basicConsume(healthQueue, false, { _, delivery ->

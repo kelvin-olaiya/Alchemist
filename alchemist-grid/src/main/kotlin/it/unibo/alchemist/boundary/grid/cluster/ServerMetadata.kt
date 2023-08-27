@@ -7,9 +7,9 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster.management
+package it.unibo.alchemist.boundary.grid.cluster
 
 /**
  * Server related data for the correct cluster management.
  */
-data class ServerMetadata(val metadata: Map<String, String>)
+typealias ServerMetadata = Map<String, String>

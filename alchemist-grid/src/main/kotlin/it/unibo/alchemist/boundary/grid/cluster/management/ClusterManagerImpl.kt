@@ -11,10 +11,12 @@ package it.unibo.alchemist.boundary.grid.cluster.management
 
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistRemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
+import it.unibo.alchemist.boundary.grid.cluster.ServerMetadata
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
 import it.unibo.alchemist.proto.Cluster
 import it.unibo.alchemist.proto.Common
 import java.util.Map.copyOf
+import java.util.Optional
 import java.util.UUID
 
 class ClusterManagerImpl(
@@ -27,11 +29,14 @@ class ClusterManagerImpl(
         }.toList()
     }
 
+    override fun metadataOf(serverID: UUID): Optional<ServerMetadata> =
+        Optional.ofNullable(servers.find { it.serverID == serverID }).map { it.metadata }
+
     override fun join(serverID: UUID, serverMetadata: ServerMetadata) {
         val protoServerID = Common.ID.newBuilder().setValue(serverID.toString())
         val serverData = Cluster.Registration.newBuilder()
             .setServerID(protoServerID)
-            .putAllMetadata(serverMetadata.metadata)
+            .putAllMetadata(serverMetadata)
             .build()
         kvStore.put(asEtcdServerKey(serverID.toString()), serverData.toByteArray())
     }
