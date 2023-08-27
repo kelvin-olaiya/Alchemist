@@ -13,7 +13,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterManagerImpl
-import it.unibo.alchemist.boundary.grid.cluster.manager.EtcdHelper
+import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
 import it.unibo.alchemist.test.utils.GridTestUtils.startAlchemistProcess
 import it.unibo.alchemist.test.utils.TestableProcess
@@ -26,7 +26,7 @@ class ClusterTest : StringSpec({
     "Cluster exposes correct number of servers" {
         val processes = startServers(SERVERS_TO_LAUNCH)
         processes.forEach { it.awaitOutputContains("Registered to cluster") }
-        val cluster = ClusterImpl(ClusterManagerImpl(etcdHelper))
+        val cluster = ClusterImpl(ClusterManagerImpl(etcdKVStore))
         cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH
         processes.forEach { it.close() }
     }
@@ -42,7 +42,7 @@ class ClusterTest : StringSpec({
                 it.awaitOutputContains("health-checker started")
             }
             Thread.sleep(2000) // lets the health check routine run for a while
-            val cluster = ClusterImpl(ClusterManagerImpl(etcdHelper))
+            val cluster = ClusterImpl(ClusterManagerImpl(etcdKVStore))
             cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH - 1
         }
     }
@@ -61,7 +61,7 @@ class ClusterTest : StringSpec({
         private const val SERVERS_TO_LAUNCH = 2
         private val ETCD_SERVER_ENDPOINTS =
             listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
-        private val etcdHelper = EtcdHelper(ETCD_SERVER_ENDPOINTS)
+        private val etcdKVStore = EtcdKVStore(ETCD_SERVER_ENDPOINTS)
         private val serverConfigFile = Path.of("src", "test", "resources", "server-config.yml").toString()
         private val composeFilePath = Path.of("src", "test", "resources", "docker-compose.yml").toString()
     }

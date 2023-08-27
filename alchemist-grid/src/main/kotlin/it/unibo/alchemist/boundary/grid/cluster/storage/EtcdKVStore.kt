@@ -7,29 +7,31 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster.manager
+package it.unibo.alchemist.boundary.grid.cluster.storage
 
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import io.etcd.jetcd.options.GetOption
 
-class EtcdHelper(
+class EtcdKVStore(
     endpoints: List<String>,
-) : AutoCloseable {
+) : KVStore {
 
     private val client = Client.builder().endpoints(*endpoints.toTypedArray()).build()
     private val kvClient = client.kvClient
 
-    fun get(key: String, isPrefix: Boolean = true): Collection<ByteSequence> {
+    override fun get(key: String, isPrefix: Boolean): Collection<ByteSequence> {
         val response = kvClient.get(key.toByteSequence(), GetOption.newBuilder().isPrefix(isPrefix).build()).get()
         return response.kvs.map { it.value }.toList()
     }
 
-    fun put(key: String, bytes: ByteSequence) = kvClient.put(key.toByteSequence(), bytes)
+    override fun put(key: String, bytes: ByteSequence) {
+        kvClient.put(key.toByteSequence(), bytes).join()
+    }
 
-    fun put(key: String, bytes: ByteArray) = put(key, bytes.toByteSequence())
-
-    fun delete(key: String) = kvClient.delete(key.toByteSequence())
+    override fun delete(key: String) {
+        kvClient.delete(key.toByteSequence()).join()
+    }
 
     override fun close() {
         kvClient.close()
@@ -37,5 +39,4 @@ class EtcdHelper(
     }
 
     private fun String.toByteSequence() = ByteSequence.from(this.toByteArray())
-    private fun ByteArray.toByteSequence() = ByteSequence.from(this)
 }

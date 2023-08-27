@@ -11,17 +11,18 @@ package it.unibo.alchemist.boundary.grid.cluster.manager
 
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistRemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
+import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
 import it.unibo.alchemist.proto.Cluster
 import it.unibo.alchemist.proto.Common
 import java.util.Map.copyOf
 import java.util.UUID
 
 class ClusterManagerImpl(
-    private val etcd: EtcdHelper,
+    private val kvStore: KVStore,
 ) : ClusterInfoManagerClientFacade, ClusterInfoManagerServerFacade, AutoCloseable {
 
     override val servers: Collection<RemoteServer> get() {
-        return etcd.get(ETCD_SERVERS_KEY).map { Cluster.Registration.parseFrom(it.bytes) }.map {
+        return kvStore.get(SERVERS_KEY).map { Cluster.Registration.parseFrom(it.bytes) }.map {
             AlchemistRemoteServer(UUID.fromString(it.serverID.value), copyOf(it.metadataMap))
         }.toList()
     }
@@ -32,19 +33,19 @@ class ClusterManagerImpl(
             .setServerID(protoServerID)
             .putAllMetadata(serverMetadata.metadata)
             .build()
-        etcd.put(asEtcdServerKey(serverID.toString()), serverData.toByteArray()).join()
+        kvStore.put(asEtcdServerKey(serverID.toString()), serverData.toByteArray())
     }
 
     override fun leave(serverID: UUID) {
-        etcd.delete(asEtcdServerKey(serverID.toString())).join()
+        kvStore.delete(asEtcdServerKey(serverID.toString()))
     }
 
     override fun close() {
-        etcd.close()
+        kvStore.close()
     }
 
     companion object {
-        private const val ETCD_SERVERS_KEY = "servers"
-        private fun asEtcdServerKey(serverID: String) = "${ETCD_SERVERS_KEY}/$serverID"
+        private const val SERVERS_KEY = "servers"
+        private fun asEtcdServerKey(serverID: String) = "${SERVERS_KEY}/$serverID"
     }
 }
