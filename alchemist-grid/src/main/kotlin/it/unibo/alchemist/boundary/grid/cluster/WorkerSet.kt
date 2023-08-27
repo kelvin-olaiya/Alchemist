@@ -9,6 +9,8 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
+import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
+import it.unibo.alchemist.boundary.grid.simulation.SimulationBatchImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
@@ -24,8 +26,13 @@ interface WorkerSet {
      * Dispatch the [SimulationInitializer]s for the
      * provided [SimulationConfig].
      */
-    fun dispatchJobs(
+    fun dispatchBatch(
         simulationConfig: SimulationConfig,
         simulationInitializers: Collection<SimulationInitializer>,
-    ): Collection<UUID>
+    ): Collection<UUID> = dispatchBatch(SimulationBatchImpl(simulationConfig, simulationInitializers))
+
+    /**
+     * Dispatch the [SimulationBatch].
+     */
+    fun dispatchBatch(batch: SimulationBatch): Collection<UUID>
 }

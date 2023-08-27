@@ -9,6 +9,7 @@
 package it.unibo.alchemist.boundary.launchers
 
 import it.unibo.alchemist.boundary.Loader
+import org.slf4j.LoggerFactory
 
 /**
  * Launches a simulation set on a cluster of Alchemist nodes running in server mode.
@@ -18,11 +19,9 @@ class DistributedExecution(
     private val distributedConfigPath: String?,
 ) : SimulationLauncher() {
 
+    private val logger = LoggerFactory.getLogger(DistributedExecution::class.java)
+
     override fun launch(loader: Loader) {
-        /*val simulationConfig = SimulationConfigFactory.newSimulationConfig(loader, Long.MAX_VALUE, Time.INFINITY)
-        val simConfigs = loader.variables.cartesianProductOf(variables).map(::SimulationInitializer)*/
-        /*val cluster =
-            ClusterImpl(Paths.get(requireNotNull(distributedConfigPath) { "No remote configuration file" }))
-        cluster.getWorkersSet(simulationSet.computeComplexity()).distributeSimulations(simulationSet)*/
+        logger.debug("batch distributed")
     }
 }

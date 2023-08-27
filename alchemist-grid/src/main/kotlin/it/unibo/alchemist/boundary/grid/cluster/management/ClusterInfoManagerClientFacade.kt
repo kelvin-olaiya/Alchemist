@@ -9,4 +9,22 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.management
 
-interface ClusterInfoManagerClientFacade : ClusterInfoManager
+import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
+import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
+import java.util.UUID
+
+interface ClusterInfoManagerClientFacade : ClusterInfoManager {
+
+    /**
+     * Submit the simulation configuration to the cluster storage.
+     */
+    fun submitSimulationConfiguration(configuration: SimulationConfig): UUID
+
+    /**
+     * Submits the simulation initializer to the cluster storage.
+     */
+    fun submitSimulationInitializers(
+        simulationID: UUID,
+        initializers: Collection<SimulationInitializer>,
+    ): Collection<UUID>
+}

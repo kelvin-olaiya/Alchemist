@@ -13,6 +13,8 @@ import it.unibo.alchemist.boundary.grid.cluster.AlchemistRemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.ServerMetadata
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
+import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
+import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import it.unibo.alchemist.proto.Cluster
 import it.unibo.alchemist.proto.Common
 import java.util.Map.copyOf
@@ -22,6 +24,17 @@ import java.util.UUID
 class ClusterManagerImpl(
     private val kvStore: KVStore,
 ) : ClusterInfoManagerClientFacade, ClusterInfoManagerServerFacade, AutoCloseable {
+
+    override fun submitSimulationConfiguration(configuration: SimulationConfig): UUID {
+        TODO("Not yet implemented")
+    }
+
+    override fun submitSimulationInitializers(
+        simulationID: UUID,
+        initializers: Collection<SimulationInitializer>,
+    ): Collection<UUID> {
+        TODO("Not yet implemented")
+    }
 
     override val servers: Collection<RemoteServer> get() {
         return kvStore.get(SERVERS_KEY).map { Cluster.Registration.parseFrom(it.bytes) }.map {
@@ -51,6 +64,7 @@ class ClusterManagerImpl(
 
     companion object {
         private const val SERVERS_KEY = "servers"
+        private const val SIMULATIONS_KEY = "simulations"
         private fun asEtcdServerKey(serverID: String) = "${SERVERS_KEY}/$serverID"
     }
 }
