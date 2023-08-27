@@ -9,13 +9,15 @@
 package it.unibo.alchemist.boundary.launchers
 
 import it.unibo.alchemist.boundary.Loader
-import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.HEALTH_QUEUE_METADATA_KEY
-import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.JOBS_QUEUE_METADATA_KEY
-import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.channel
-import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.getQueueNameFor
 import it.unibo.alchemist.boundary.grid.cluster.management.ClusterHealthChecker
 import it.unibo.alchemist.boundary.grid.cluster.management.ClusterManagerImpl
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
+import it.unibo.alchemist.boundary.grid.communication.ServerQueues.HEALTH_QUEUE_METADATA_KEY
+import it.unibo.alchemist.boundary.grid.communication.ServerQueues.JOBS_QUEUE_METADATA_KEY
+import it.unibo.alchemist.boundary.grid.communication.ServerQueues.getQueueNameFor
 import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
 import it.unibo.alchemist.proto.Common
 import org.slf4j.LoggerFactory
@@ -25,11 +27,16 @@ import java.util.UUID
  * Launches a service waiting for simulations to be sent over the network.
  */
 class AlchemistServer : SimulationLauncher() {
+
     private val logger = LoggerFactory.getLogger(AlchemistServer::class.java)
 
     override fun launch(loader: Loader) {
         val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
         val serverID = UUID.randomUUID()
+        val healthCheckResponseMessage = HealthCheckResponse.newBuilder()
+            .setServerID(Common.ID.newBuilder().setValue(serverID.toString()))
+            .build()
+            .toByteArray()
         logger.debug("Server assigned ID: {}", serverID)
         val healthQueue = getQueueNameFor(serverID, "health")
         val jobsQueue = getQueueNameFor(serverID, "jobs")
@@ -42,19 +49,12 @@ class AlchemistServer : SimulationLauncher() {
         clusterManager.join(serverID, metadata)
         logger.debug("Registered to cluster")
         channel.queueDeclare(healthQueue, false, false, false, null)
-        channel.basicConsume(healthQueue, false, { _, delivery ->
+        registerQueueConsumer(healthQueue) { _, delivery ->
+            logger.debug("{} - Received helth check request", serverID)
             val replyTo = delivery.properties.replyTo
-            channel.basicPublish(
-                "",
-                replyTo,
-                null,
-                HealthCheckResponse.newBuilder()
-                    .setServerID(Common.ID.newBuilder().setValue(serverID.toString()))
-                    .build()
-                    .toByteArray(),
-            )
-            println("$serverID - Received helth check request")
-        }, { _ -> })
+            publishToQueue(replyTo, healthCheckResponseMessage)
+            logger.debug("Sent health check response to {} queue", replyTo)
+        }
         logger.debug("health-queue registered $healthQueue")
         Thread(ClusterHealthChecker(clusterManager, 500, 1)).start()
         logger.debug("health-checker started")

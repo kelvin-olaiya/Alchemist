@@ -7,26 +7,14 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster
+package it.unibo.alchemist.boundary.grid.communication
 
-import com.rabbitmq.client.Channel
-import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConnectionFactory
 import java.util.UUID
 
-object RabbitmqConfig {
+object ServerQueues {
 
     const val HEALTH_QUEUE_METADATA_KEY = "rabbitmq-health-queue"
     const val JOBS_QUEUE_METADATA_KEY = "rabbitmq-jobs-queue"
 
     fun getQueueNameFor(serverID: UUID, topic: String) = "$serverID-$topic"
-
-    val connection: Connection = ConnectionFactory().also {
-        it.username = "guest"
-        it.password = "guest"
-        it.host = "localhost"
-        it.port = 5672
-    }.newConnection()
-
-    val channel: Channel = connection.createChannel()
 }

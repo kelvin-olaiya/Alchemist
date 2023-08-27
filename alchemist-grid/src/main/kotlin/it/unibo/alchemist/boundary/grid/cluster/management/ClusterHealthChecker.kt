@@ -10,8 +10,8 @@
 package it.unibo.alchemist.boundary.grid.cluster.management
 
 import com.rabbitmq.client.AMQP
-import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.HEALTH_QUEUE_METADATA_KEY
-import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.communication.ServerQueues.HEALTH_QUEUE_METADATA_KEY
 import it.unibo.alchemist.proto.Cluster.HealthCheckRequest
 import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
 import java.util.Collections
