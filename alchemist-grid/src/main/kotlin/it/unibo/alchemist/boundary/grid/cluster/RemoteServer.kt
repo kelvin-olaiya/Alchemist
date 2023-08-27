@@ -20,6 +20,11 @@ interface RemoteServer {
     val serverID: UUID
 
     /**
+     * A mapping of the server metadata.
+     */
+    val metadata: Map<String, String>
+
+    /**
      * Submit the parameters for the simulation with the provided [simulationID].
      * Return the job id for future reference.
      */

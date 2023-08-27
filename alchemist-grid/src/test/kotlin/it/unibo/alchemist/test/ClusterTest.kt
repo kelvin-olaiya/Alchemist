@@ -32,17 +32,29 @@ class ClusterTest : StringSpec({
     }
 
     "Cluster exposes correct number of servers after shutdown" {
-        val processes = startServers(SERVERS_TO_LAUNCH)
-        processes.forEach { it.awaitOutputContains("Registered to cluster") }
-        val processToShutdown = processes.first()
-        val remainingProcesses = processes - processToShutdown
-        processToShutdown.close()
-        remainingProcesses.forEach { it.awaitOutputContains("health-queue registered") }
-        val cluster = ClusterImpl(ClusterManagerImpl(etcdHelper))
-        cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+        startServers(SERVERS_TO_LAUNCH).use { processes ->
+            processes.forEach { it.awaitOutputContains("Registered to cluster") }
+            processes.forEach { it.awaitOutputContains("health-queue registered") }
+            val processToShutdown = processes.first()
+            val remainingProcesses = processes - processToShutdown
+            processToShutdown.close()
+            remainingProcesses.forEach {
+                it.awaitOutputContains("health-checker started")
+            }
+            Thread.sleep(2000) // lets the health check routine run for a while
+            val cluster = ClusterImpl(ClusterManagerImpl(etcdHelper))
+            cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+        }
     }
 }) {
     companion object {
+        private fun <T : AutoCloseable> Collection<T>.use(block: (Collection<T>) -> Unit) {
+            try {
+                block(this)
+            } finally {
+                this.forEach { it.close() }
+            }
+        }
         private fun startServers(count: Int): List<TestableProcess> = (0 until count).map {
             startAlchemistProcess("run", serverConfigFile, "--verbosity", "debug")
         }.toList()

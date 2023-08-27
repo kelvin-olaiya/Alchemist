@@ -11,6 +11,9 @@ package it.unibo.alchemist.boundary.grid.cluster.manager
 
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistRemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
+import it.unibo.alchemist.proto.Cluster
+import it.unibo.alchemist.proto.Common
+import java.util.Map.copyOf
 import java.util.UUID
 
 class ClusterManagerImpl(
@@ -19,7 +22,7 @@ class ClusterManagerImpl(
 
     override val servers: Collection<RemoteServer> get() {
         return etcd.get(ETCD_SERVERS_KEY).map { Cluster.Registration.parseFrom(it.bytes) }.map {
-            AlchemistRemoteServer(UUID.fromString(it.serverID.value))
+            AlchemistRemoteServer(UUID.fromString(it.serverID.value), copyOf(it.metadataMap))
         }.toList()
     }
 
@@ -27,13 +30,13 @@ class ClusterManagerImpl(
         val protoServerID = Common.ID.newBuilder().setValue(serverID.toString())
         val serverData = Cluster.Registration.newBuilder()
             .setServerID(protoServerID)
-            .setQueueName(serverMetadata.rabbitmq)
+            .putAllMetadata(serverMetadata.metadata)
             .build()
         etcd.put(asEtcdServerKey(serverID.toString()), serverData.toByteArray()).join()
     }
 
     override fun leave(serverID: UUID) {
-        etcd.delete(asEtcdServerKey(serverID.toString()))
+        etcd.delete(asEtcdServerKey(serverID.toString())).join()
     }
 
     override fun close() {

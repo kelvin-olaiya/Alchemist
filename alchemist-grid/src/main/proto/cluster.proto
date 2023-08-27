@@ -1,7 +1,16 @@
 syntax = "proto3";
 import "common.proto";
+package it.unibo.alchemist.proto;
 
 message Registration {
   ID serverID = 1;
-  string queueName = 2;
+  map<string, string> metadata = 2;
+}
+
+message HealthCheckRequest {
+  string replyTo = 1;
+}
+
+message HealthCheckResponse {
+  ID serverID = 1;
 }

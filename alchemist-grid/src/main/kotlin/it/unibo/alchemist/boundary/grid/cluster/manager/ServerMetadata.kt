@@ -12,4 +12,4 @@ package it.unibo.alchemist.boundary.grid.cluster.manager
 /**
  * Server related data for the correct cluster management.
  */
-data class ServerMetadata(val rabbitmq: String)
+data class ServerMetadata(val metadata: Map<String, String>)

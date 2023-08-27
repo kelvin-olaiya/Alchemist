@@ -8,11 +8,17 @@
  */
 package it.unibo.alchemist.boundary.launchers
 
-import com.rabbitmq.client.ConnectionFactory
 import it.unibo.alchemist.boundary.Loader
+import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.HEALTH_QUEUE_METADATA_KEY
+import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.JOBS_QUEUE_METADATA_KEY
+import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.getQueueNameFor
+import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterHealthChecker
 import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterManagerImpl
 import it.unibo.alchemist.boundary.grid.cluster.manager.EtcdHelper
 import it.unibo.alchemist.boundary.grid.cluster.manager.ServerMetadata
+import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
+import it.unibo.alchemist.proto.Common
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -26,24 +32,32 @@ class AlchemistServer : SimulationLauncher() {
         val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
         val serverID = UUID.randomUUID()
         logger.debug("Server assigned ID: {}", serverID)
-        with(ClusterManagerImpl(EtcdHelper(endpoints))) {
-            logger.debug("Registering to cluster")
-            join(serverID, ServerMetadata("prova"))
-            logger.debug("Registered to cluster")
-        }
-        val connectionFactory = ConnectionFactory()
-        connectionFactory.username = "guest"
-        connectionFactory.password = "guest"
-        connectionFactory.host = "localhost"
-        connectionFactory.port = 5672
-        connectionFactory.virtualHost = "/"
-        val connection = connectionFactory.newConnection()
-        val channel = connection.createChannel()
-        val healthQueue = "$serverID-health"
+        val healthQueue = getQueueNameFor(serverID, "health")
+        val jobsQueue = getQueueNameFor(serverID, "jobs")
+        val metadata = mapOf(
+            HEALTH_QUEUE_METADATA_KEY to healthQueue,
+            JOBS_QUEUE_METADATA_KEY to jobsQueue,
+        )
+        val clusterManager = ClusterManagerImpl(EtcdHelper(endpoints))
+        logger.debug("Registering to cluster")
+        clusterManager.join(serverID, ServerMetadata(metadata))
+        logger.debug("Registered to cluster")
         channel.queueDeclare(healthQueue, false, false, false, null)
         channel.basicConsume(healthQueue, false, { _, delivery ->
-            println(String(delivery.body))
+            val replyTo = delivery.properties.replyTo
+            channel.basicPublish(
+                "",
+                replyTo,
+                null,
+                HealthCheckResponse.newBuilder()
+                    .setServerID(Common.ID.newBuilder().setValue(serverID.toString()))
+                    .build()
+                    .toByteArray(),
+            )
+            println("$serverID - Received helth check request")
         }, { _ -> })
         logger.debug("health-queue registered $healthQueue")
+        Thread(ClusterHealthChecker(clusterManager, 500, 1)).start()
+        logger.debug("health-checker started")
     }
 }
