@@ -7,9 +7,14 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster.manager
+package it.unibo.alchemist.boundary.grid.cluster.management
 
-/**
- * Server related data for the correct cluster management.
- */
-data class ServerMetadata(val metadata: Map<String, String>)
+import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
+
+interface ClusterInfoManager {
+
+    /**
+     * Returns a collection of server in the cluster.
+     */
+    val servers: Collection<RemoteServer>
+}

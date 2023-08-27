@@ -12,7 +12,7 @@ package it.unibo.alchemist.test
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeExactly
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
-import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterManagerImpl
+import it.unibo.alchemist.boundary.grid.cluster.management.ClusterManagerImpl
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
 import it.unibo.alchemist.test.utils.GridTestUtils.startAlchemistProcess

@@ -7,7 +7,7 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster.manager
+package it.unibo.alchemist.boundary.grid.cluster.management
 
 import com.rabbitmq.client.AMQP
 import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.HEALTH_QUEUE_METADATA_KEY

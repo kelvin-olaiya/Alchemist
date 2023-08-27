@@ -7,13 +7,9 @@
  * as described in the file LICENSE in the Alchemist distribution's top directory.
  */
 
-package it.unibo.alchemist.boundary.grid.cluster.manager
+package it.unibo.alchemist.boundary.grid.cluster.management
 
-import java.util.UUID
-
-interface ClusterInfoManagerServerFacade : ClusterInfoManager {
-
-    fun join(serverID: UUID, serverMetadata: ServerMetadata)
-
-    fun leave(serverID: UUID)
-}
+/**
+ * Server related data for the correct cluster management.
+ */
+data class ServerMetadata(val metadata: Map<String, String>)

@@ -13,9 +13,9 @@ import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.HEALTH_QUEUE_META
 import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.JOBS_QUEUE_METADATA_KEY
 import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.channel
 import it.unibo.alchemist.boundary.grid.cluster.RabbitmqConfig.getQueueNameFor
-import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterHealthChecker
-import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterManagerImpl
-import it.unibo.alchemist.boundary.grid.cluster.manager.ServerMetadata
+import it.unibo.alchemist.boundary.grid.cluster.management.ClusterHealthChecker
+import it.unibo.alchemist.boundary.grid.cluster.management.ClusterManagerImpl
+import it.unibo.alchemist.boundary.grid.cluster.management.ServerMetadata
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
 import it.unibo.alchemist.proto.Common

@@ -9,7 +9,7 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.cluster.manager.ClusterInfoManagerClientFacade
+import it.unibo.alchemist.boundary.grid.cluster.management.ClusterInfoManagerClientFacade
 import it.unibo.alchemist.boundary.grid.simulation.Complexity
 
 class ClusterImpl(
