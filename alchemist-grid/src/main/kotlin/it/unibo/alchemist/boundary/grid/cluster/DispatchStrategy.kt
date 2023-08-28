@@ -9,14 +9,16 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
 @FunctionalInterface
 interface DispatchStrategy {
 
+    /**
+     * Assigns some simulation to the cluster servers.
+     */
     fun makeAssignments(
         servers: List<RemoteServer>,
-        initializers: List<SimulationInitializer>,
-    ): Map<UUID, SimulationInitializer>
+        jobs: List<UUID>,
+    ): Map<RemoteServer, List<UUID>>
 }
