@@ -1,6 +1,2 @@
 syntax = "proto3";
 package it.unibo.alchemist.proto;
-
-message ID {
-  string value = 1;
-}

@@ -37,7 +37,7 @@ class ClusterHealthChecker(
             if (!callbackRegistered) {
                 channel.basicConsume(responsesQueue, true, { _, delivery ->
                     val response = HealthCheckResponse.parseFrom(delivery.body)
-                    pendingRequests.remove(response.serverID.value)
+                    pendingRequests.remove(response.serverID)
                 }, { _ -> })
                 callbackRegistered = true
             }

@@ -19,7 +19,6 @@ import it.unibo.alchemist.boundary.grid.communication.ServerQueues.HEALTH_QUEUE_
 import it.unibo.alchemist.boundary.grid.communication.ServerQueues.JOBS_QUEUE_METADATA_KEY
 import it.unibo.alchemist.boundary.grid.communication.ServerQueues.getQueueNameFor
 import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
-import it.unibo.alchemist.proto.Common
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -34,7 +33,7 @@ class AlchemistServer : SimulationLauncher() {
         val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
         val serverID = UUID.randomUUID()
         val healthCheckResponseMessage = HealthCheckResponse.newBuilder()
-            .setServerID(Common.ID.newBuilder().setValue(serverID.toString()))
+            .setServerID(serverID.toString())
             .build()
             .toByteArray()
         logger.debug("Server assigned ID: {}", serverID)

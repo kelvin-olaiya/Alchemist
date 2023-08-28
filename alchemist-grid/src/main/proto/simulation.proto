@@ -1,0 +1,19 @@
+syntax = "proto3";
+import "common.proto";
+package it.unibo.alchemist.proto;
+
+message SimulationConfiguration {
+  int64 endStep = 1;
+  double endTime = 2;
+  map<string, bytes> dependencies = 3;
+}
+
+message Simulation {
+  string simulationID = 1;
+  bytes environment = 2;
+  bytes exports = 3;
+}
+
+message RunSimulation {
+  string jobID = 1;
+}

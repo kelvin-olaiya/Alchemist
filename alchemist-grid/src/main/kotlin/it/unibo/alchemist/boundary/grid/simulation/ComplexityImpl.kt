@@ -9,4 +9,4 @@
 
 package it.unibo.alchemist.boundary.grid.simulation
 
-data class ComplexityImpl(override val ram: Double, override val cpu: Double) : Complexity
+data class ComplexityImpl(override val ram: Double = 0.0, override val cpu: Double = 0.0) : Complexity

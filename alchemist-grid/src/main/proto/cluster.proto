@@ -3,7 +3,7 @@ import "common.proto";
 package it.unibo.alchemist.proto;
 
 message Registration {
-  ID serverID = 1;
+  string serverID = 1;
   map<string, string> metadata = 2;
 }
 
@@ -12,5 +12,5 @@ message HealthCheckRequest {
 }
 
 message HealthCheckResponse {
-  ID serverID = 1;
+  string serverID = 1;
 }

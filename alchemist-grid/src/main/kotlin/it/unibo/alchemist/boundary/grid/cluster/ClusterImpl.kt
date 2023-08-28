@@ -16,9 +16,8 @@ class ClusterImpl(
     private val clusterInfoManager: ClusterInfoManagerClientFacade,
 ) : Cluster {
 
-    override fun workerSet(simulationComplexity: Complexity): WorkerSet {
-        TODO("Not yet implemented")
-    }
+    override fun workerSet(simulationComplexity: Complexity): WorkerSet =
+        WorkerSetImpl(servers, clusterInfoManager, DispatchStrategyFactory.roundRobin)
 
     override val servers: Collection<RemoteServer>
         get() = clusterInfoManager.servers
