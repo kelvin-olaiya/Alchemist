@@ -36,6 +36,7 @@ dependencies {
     implementation(libs.jetcd)
     implementation(libs.protobuf.kotlin)
     implementation(libs.rabbitmq)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.6.0")
     testImplementation(libs.docker.compose.rule)
     testImplementation(incarnation("sapere"))
 }

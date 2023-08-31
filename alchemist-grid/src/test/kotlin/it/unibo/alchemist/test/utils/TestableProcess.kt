@@ -100,7 +100,6 @@ class TestableProcess(
             start()
             join(timeoutMillis)
             if (isAlive) {
-                interrupt()
                 onTimeout()
             }
         }

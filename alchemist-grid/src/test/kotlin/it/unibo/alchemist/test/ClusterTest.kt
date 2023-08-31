@@ -52,11 +52,11 @@ class ClusterTest : StringSpec({
         startServers(SERVERS_TO_LAUNCH).use { servers ->
             servers.forEach { it.awaitClusterJoin() }
             startAlchemistProcess("run", clientConfigFile, "--verbosity", "debug").use { client ->
-                client.awaitOutputContains("batch distributed", 10000) {
+                client.awaitOutputContains("Simulation batch has been distributed", 100000) {
                     fail { "Simulation batch has not been distributed" }
                 }
                 servers.forEach {
-                    it.awaitOutputContains("received simulation", 2000) {
+                    it.awaitOutputContains("Received job order", 100000) {
                         fail { "Server have not received simulation" }
                     }
                 }

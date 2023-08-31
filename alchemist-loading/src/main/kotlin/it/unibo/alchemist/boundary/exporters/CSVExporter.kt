@@ -19,6 +19,7 @@ import it.unibo.alchemist.util.BugReporting
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.PrintStream
+import java.io.Serializable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -44,7 +45,7 @@ class CSVExporter<T, P : Position<P>> @JvmOverloads constructor(
         .also { logger.warn("No output folder specified but export required. Alchemist will export data in $it") },
     val fileExtension: String = "csv",
     private val appendTime: Boolean = false,
-) : AbstractExporter<T, P>(interval) {
+) : AbstractExporter<T, P>(interval), Serializable {
 
     private lateinit var outputPrintStream: PrintStream
 

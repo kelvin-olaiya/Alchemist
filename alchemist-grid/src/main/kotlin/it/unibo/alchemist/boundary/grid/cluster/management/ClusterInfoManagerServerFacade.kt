@@ -10,6 +10,8 @@
 package it.unibo.alchemist.boundary.grid.cluster.management
 
 import it.unibo.alchemist.boundary.grid.cluster.ServerMetadata
+import it.unibo.alchemist.core.Simulation
+import it.unibo.alchemist.model.Position
 import java.util.UUID
 
 interface ClusterInfoManagerServerFacade : ClusterInfoManager {
@@ -17,4 +19,6 @@ interface ClusterInfoManagerServerFacade : ClusterInfoManager {
     fun join(serverID: UUID, serverMetadata: ServerMetadata)
 
     fun leave(serverID: UUID)
+
+    fun <T, P : Position<P>> getSimulation(jobID: UUID): Simulation<T, P>
 }

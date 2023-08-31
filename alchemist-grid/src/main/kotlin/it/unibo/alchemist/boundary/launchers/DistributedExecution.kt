@@ -37,6 +37,6 @@ class DistributedExecution(
         val batch = SimulationBatchImpl(configuration, initializers)
         val workerSet = cluster.workerSet(ComplexityImpl())
         workerSet.dispatchBatch(batch)
-        logger.debug("batch distributed")
+        logger.debug("Simulation batch has been distributed")
     }
 }

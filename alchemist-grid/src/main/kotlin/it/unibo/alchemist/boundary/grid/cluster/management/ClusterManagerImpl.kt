@@ -9,8 +9,11 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.management
 
+import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
+import it.unibo.alchemist.boundary.Exporter
 import it.unibo.alchemist.boundary.Loader
+import it.unibo.alchemist.boundary.exporters.GlobalExporter
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistRemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.RemoteServer
 import it.unibo.alchemist.boundary.grid.cluster.ServerMetadata
@@ -18,10 +21,20 @@ import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
+import it.unibo.alchemist.core.Engine
+import it.unibo.alchemist.model.Environment
+import it.unibo.alchemist.model.Position
+import it.unibo.alchemist.model.times.DoubleTime
 import it.unibo.alchemist.proto.Cluster
 import it.unibo.alchemist.proto.SimulationOuterClass.Simulation
 import it.unibo.alchemist.proto.SimulationOuterClass.SimulationConfiguration
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.util.Map.copyOf
 import java.util.Optional
@@ -42,23 +55,34 @@ class ClusterManagerImpl(
         return simulationID
     }
 
-    private fun <T> submitJobs(
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun submitJobs(
         simulationID: UUID,
         loader: Loader,
         initializers: Collection<SimulationInitializer>,
     ): List<UUID> {
         val jobIDs = mutableListOf<UUID>()
-        initializers.forEach {
-            val initializedEnvironment = loader.getWith<T, _>(it.variables)
-            val protoJob = Simulation.newBuilder()
-                .setSimulationID(simulationID.toString())
-                .setEnvironment(serializeObject(initializedEnvironment.environment).toByteString())
-                .setExports(serializeObject(initializedEnvironment.exporters).toByteString())
-                .build()
-            val jobID = UUID.randomUUID()
-            kvStore.put("$JOBS_KEY/$jobID", protoJob.toByteArray())
-            jobIDs.add(jobID)
-        }
+        val initEnv = loader.getWith<Any, _>(initializers.first().variables)
+        val protoExp = ProtoBuf.encodeToByteArray(initEnv.exporters).toByteString()
+        val protoJob = Simulation.newBuilder()
+            .setSimulationID(simulationID.toString())
+            .setEnvironment(serializeObject(initEnv.environment).toByteString())
+            .setExports(protoExp)
+            .build()
+        val jobID = UUID.randomUUID()
+        kvStore.put("$JOBS_KEY/$jobID", protoJob.toByteArray())
+        jobIDs.add(jobID)
+//        initializers.forEach {
+//            val initializedEnvironment = loader.getWith<T, _>(it.variables)
+//            val protoJob = Simulation.newBuilder()
+//                .setSimulationID(simulationID.toString())
+//                .setEnvironment(serializeObject(initializedEnvironment.environment).toByteString())
+//                .setExports(ProtoBuf.encodeToByteArray(initializedEnvironment.exporters).toByteString())
+//                .build()
+//            val jobID = UUID.randomUUID()
+//            kvStore.put("$JOBS_KEY/$jobID", protoJob.toByteArray())
+//            jobIDs.add(jobID)
+//        }
         return jobIDs
     }
 
@@ -70,9 +94,17 @@ class ClusterManagerImpl(
         return byteStream.toByteArray()
     }
 
+    private fun deserializeObject(bytes: ByteString): Any {
+        val byteStream = ByteArrayInputStream(bytes.toByteArray())
+        val objectStream = ObjectInputStream(byteStream)
+        val obj = objectStream.readObject()
+        objectStream.close()
+        return obj
+    }
+
     override fun submitSimulationBatch(batch: SimulationBatch): List<UUID> {
         val simulationID = submitSimulationConfiguration(batch.configuration)
-        return submitJobs<Any>(simulationID, batch.configuration.loader, batch.initializers)
+        return submitJobs(simulationID, batch.configuration.loader, batch.initializers)
     }
 
     override val servers: Collection<RemoteServer> get() {
@@ -94,6 +126,23 @@ class ClusterManagerImpl(
 
     override fun leave(serverID: UUID) {
         kvStore.delete(asEtcdServerKey(serverID.toString()))
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    @Suppress("UNCHECKED_CAST")
+    override fun <T, P : Position<P>> getSimulation(jobID: UUID): it.unibo.alchemist.core.Simulation<T, P> {
+        val job = kvStore.get("$JOBS_KEY/$jobID").first().bytes
+        val simulation = Simulation.parseFrom(job)
+        val simulationID = simulation.simulationID
+        val config = kvStore.get("$SIMULATIONS_KEY/$simulationID").first().bytes
+        val simulationConfig = SimulationConfiguration.parseFrom(config)
+        // save dependencies
+        val environment: Environment<T, P> = deserializeObject(simulation.environment) as Environment<T, P>
+        val sim = Engine(environment, simulationConfig.endStep, DoubleTime(simulationConfig.endTime))
+        val exporters = ProtoBuf.decodeFromByteArray<List<Any>>(simulation.exports.toByteArray())
+            .map { it as Exporter<T, P> }
+        sim.addOutputMonitor(GlobalExporter(exporters))
+        return sim
     }
 
     override fun close() {

@@ -19,6 +19,7 @@ import it.unibo.alchemist.boundary.grid.communication.ServerQueues.HEALTH_QUEUE_
 import it.unibo.alchemist.boundary.grid.communication.ServerQueues.JOBS_QUEUE_METADATA_KEY
 import it.unibo.alchemist.boundary.grid.communication.ServerQueues.getQueueNameFor
 import it.unibo.alchemist.proto.Cluster.HealthCheckResponse
+import it.unibo.alchemist.proto.SimulationOuterClass.RunSimulation
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -53,6 +54,13 @@ class AlchemistServer : SimulationLauncher() {
             val replyTo = delivery.properties.replyTo
             publishToQueue(replyTo, healthCheckResponseMessage)
             logger.debug("Sent health check response to {} queue", replyTo)
+        }
+        channel.queueDeclare(jobsQueue, false, false, false, null)
+        registerQueueConsumer(jobsQueue) { _, delivery ->
+            val jobId = RunSimulation.parseFrom(delivery.body).jobID
+            logger.debug("Received job order $jobId")
+            val simulation = clusterManager.getSimulation<Any, _>(UUID.fromString(jobId))
+            println(simulation.toString())
         }
         logger.debug("health-queue registered $healthQueue")
         Thread(ClusterHealthChecker(clusterManager, 500, 1)).start()

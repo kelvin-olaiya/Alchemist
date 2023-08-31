@@ -15,6 +15,7 @@ import it.unibo.alchemist.model.Environment
 import it.unibo.alchemist.model.Molecule
 import it.unibo.alchemist.model.Node
 import it.unibo.alchemist.model.Position
+import java.io.Serializable
 import java.util.function.Predicate
 
 /**
@@ -45,10 +46,11 @@ import java.util.function.Predicate
 class StableForSteps<T>(
     private val checkInterval: Long,
     private val equalIntervals: Long,
-) : Predicate<Environment<T, *>> {
+) : Predicate<Environment<T, *>>, Serializable {
     private var success: Long = 0
     private var positions: Map<Node<T>, Position<*>> = emptyMap()
-    private var contents = makeTable<T>(0)
+
+    @Transient private lateinit var contents: Table<Node<T>, Molecule, T>
 
     init {
         require(checkInterval > 0 && equalIntervals > 0) {
@@ -57,6 +59,9 @@ class StableForSteps<T>(
     }
 
     override fun test(environment: Environment<T, *>): Boolean {
+        if (!this::contents.isInitialized) {
+            contents = makeTable<T>(0)
+        }
         if (environment.getSimulation().getStep() % checkInterval == 0L) {
             val newPositions = environment.associateBy({ it }, { environment.getPosition(it) })
             val newContents = makeTable<T>(environment.getNodeCount())
