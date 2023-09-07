@@ -15,6 +15,10 @@ import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
 
 object RabbitmqUtils {
 
+    fun declareQueue(name: String) {
+        channel.queueDeclare(name, false, false, false, null)
+    }
+
     fun publishToQueue(queueName: String, payload: ByteArray) {
         channel.basicPublish("", queueName, AMQP.BasicProperties(), payload)
     }

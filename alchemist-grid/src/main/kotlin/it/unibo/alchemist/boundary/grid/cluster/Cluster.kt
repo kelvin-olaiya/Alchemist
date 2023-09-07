@@ -16,10 +16,10 @@ interface Cluster {
     /**
      * A set of remote servers for the given [simulationComplexity].
      */
-    fun workerSet(simulationComplexity: Complexity): WorkerSet
+    fun workerSet(simulationComplexity: Complexity): Dispatcher
 
     /**
      * The remote servers currently joining the cluster.
      */
-    val servers: Collection<RemoteServer>
+    val nodes: Collection<ClusterNode>
 }

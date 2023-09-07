@@ -14,7 +14,7 @@ import java.util.UUID
 object DispatchStrategyFactory {
 
     val roundRobin = object : DispatchStrategy {
-        override fun makeAssignments(servers: List<RemoteServer>, jobs: List<UUID>): Map<RemoteServer, List<UUID>> {
+        override fun makeAssignments(servers: List<ClusterNode>, jobs: List<UUID>): Map<ClusterNode, List<UUID>> {
             return servers.indices.map {
                 it until jobs.size step servers.size
             }.withIndex().associate {

@@ -1,39 +1,41 @@
-incarnation: protelis
-
-environment:
-  type: ContinuousPhysics2DEnvironment
+incarnation: sapere
 
 variables:
-  pedestrianNumber: &pedestrianNumber
+  verticalEnd: &verticalEnd
     type: LinearVariable
-    parameters: [10, 10, 100, 10]
-  circleRadius: &cicleRadius
+    parameters: [5, 5, 7, 1]
+  horizontalEnd: &horizontalEnd
     type: LinearVariable
-    parameters: [5, 5, 15, 5]
+    parameters: [5, 5, 7, 1]
 
-#deployments:
-#  - type: Circle
-#    parameters: [*pedestrianNumber, 0, 0, *cicleRadius]
-#    properties:
-#      - type: Human
-#        parameters: ["adult", "male"]
-#      - type: Perceptive2D
-#      - type: CognitivePedestrian
-#      - type: Cognitive2D
-#      - type: CircularArea
-#    programs:
-#      - time-distribution:
-#          type: DiracComb
-#          parameters: [ 1.0 ]
-#        type: BlendedSteering
+network-model:
+  type: ConnectWithinDistance
+  parameters: [0.5]
 
-export:
-  - type: CSVExporter
-    parameters:
-      fileNameRoot: "time_export"
-      interval: 1.5
-    data:
-      - time
+deployments:
+  type: Grid
+  parameters: [-5, -5, *horizontalEnd, *verticalEnd, 0.25, 0.25, 0.1, 0.1]
+  contents:
+    - in:
+        type: Rectangle
+        parameters: [-0.5, -0.5, 1, 1]
+      molecule: token
+  programs: # A list of the sets of reactions programming the node
+    -
+      - time-distribution: 1 # Frequency. If the class is not specified, the implementation to use is chosen by the incarnation. The SAPERE incarnation automatically loads ExponentialTime, which takes a number representing the Markovian rate.
+        # program lets the incarnation choose the class implementing Reaction, and passes down a string that, when parsed, produces the program
+        program: > # ">" begins a multiline string (quote mode)
+          {token} --> {firing}
+      # If the time distribution is unspecified, the SAPERE incarnation assumes a "ASAP" behavior (rate = Infinity)
+      - program: "{firing} --> +{token}"
+#
+#export:
+#  - type: CSVExporter
+#    parameters:
+#      fileNameRoot: "time_export"
+#      interval: 1.5
+#    data:
+#      - time
 
 terminate:
   - type: StableForSteps
@@ -41,4 +43,4 @@ terminate:
 
 launcher:
   type: DistributedExecution
-  parameters: [[pedestrianNumber, circleRadius], test]
+  parameters: [[verticalEnd, horizontalEnd], test]

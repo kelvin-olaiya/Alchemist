@@ -18,7 +18,7 @@ interface DispatchStrategy {
      * Assigns some simulation to the cluster servers.
      */
     fun makeAssignments(
-        servers: List<RemoteServer>,
+        servers: List<ClusterNode>,
         jobs: List<UUID>,
-    ): Map<RemoteServer, List<UUID>>
+    ): Map<ClusterNode, List<UUID>>
 }

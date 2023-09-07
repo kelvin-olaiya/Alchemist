@@ -15,12 +15,12 @@ import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
-interface WorkerSet {
+interface Dispatcher {
 
     /**
-     * The remote servers in this [WorkerSet].
+     * The remote servers in this [Dispatcher].
      */
-    val servers: Collection<RemoteServer>
+    val nodes: Collection<ClusterNode>
 
     /**
      * Dispatch the [SimulationInitializer]s for the

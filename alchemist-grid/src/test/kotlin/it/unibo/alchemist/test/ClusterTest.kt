@@ -11,73 +11,50 @@ package it.unibo.alchemist.test
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.ints.shouldBeExactly
+import it.unibo.alchemist.boundary.LoadAlchemist
+import it.unibo.alchemist.boundary.grid.AlchemistServer
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
-import it.unibo.alchemist.boundary.grid.cluster.management.ClusterManagerImpl
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
+import it.unibo.alchemist.boundary.launchers.DistributedExecution
 import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
-import it.unibo.alchemist.test.utils.GridTestUtils.startAlchemistProcess
-import it.unibo.alchemist.test.utils.TestableProcess
-import org.junit.jupiter.api.fail
 import java.nio.file.Path
+import java.util.UUID
 
 class ClusterTest : StringSpec({
 
     extensions(getDockerExtension(composeFilePath))
 
     "Cluster exposes correct number of servers" {
-        startServers(SERVERS_TO_LAUNCH).use { servers ->
-            servers.forEach { it.awaitClusterJoin() }
-            val cluster = ClusterImpl(ClusterManagerImpl(etcdKVStore))
-            cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH
-        }
+        val servers = startServers(SERVERS_TO_LAUNCH)
+        servers.forEach { it.register() }
+        val cluster = ClusterImpl(etcdKVStore)
+        cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
     }
 
     "Cluster exposes correct number of servers after shutdown" {
-        startServers(SERVERS_TO_LAUNCH).use { servers ->
-            servers.forEach { it.awaitClusterJoin() }
-            servers.forEach { it.awaitOutputContains("health-queue registered") }
-            val serverToShutdown = servers.first()
-            val remainingServers = servers - serverToShutdown
-            serverToShutdown.close()
-            remainingServers.forEach {
-                it.awaitOutputContains("health-checker started")
-            }
-            Thread.sleep(2000) // lets the health check routine run for a while
-            val cluster = ClusterImpl(ClusterManagerImpl(etcdKVStore))
-            cluster.servers.size shouldBeExactly SERVERS_TO_LAUNCH - 1
-        }
+        val servers = startServers(SERVERS_TO_LAUNCH)
+        servers.forEach { it.register() }
+        val serverToShutdown = servers.first()
+        serverToShutdown.deregister()
+        val cluster = ClusterImpl(etcdKVStore)
+        cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
     }
 
     "Simulation are correctly distributed" {
-        startServers(SERVERS_TO_LAUNCH).use { servers ->
-            servers.forEach { it.awaitClusterJoin() }
-            startAlchemistProcess("run", clientConfigFile, "--verbosity", "debug").use { client ->
-                client.awaitOutputContains("Simulation batch has been distributed", 100000) {
-                    fail { "Simulation batch has not been distributed" }
-                }
-                servers.forEach {
-                    it.awaitOutputContains("Received job order", 100000) {
-                        fail { "Server have not received simulation" }
-                    }
-                }
-            }
-        }
+        val servers = startServers(SERVERS_TO_LAUNCH)
+        servers.forEach { it.register() }
+        val loader = LoadAlchemist.from(clientConfigFile)
+        val client = DistributedExecution(listOf("horizontalEnd", "verticalEnd"))
+        client.launch(loader)
+        Thread.sleep(2000)
+        servers.sumOf { it.runningSimulations } shouldBeExactly 9
     }
 }) {
     companion object {
-
-        private fun TestableProcess.awaitClusterJoin() = this.awaitOutputContains("Registered to cluster")
-
-        private fun <T : AutoCloseable> Collection<T>.use(block: (Collection<T>) -> Unit) {
-            try {
-                block(this)
-            } finally {
-                this.forEach { it.close() }
-            }
-        }
-        private fun startServers(count: Int): List<TestableProcess> = (0 until count).map {
-            startAlchemistProcess("run", serverConfigFile, "--verbosity", "debug")
-        }.toList()
+        private fun startServers(count: Int): List<AlchemistServer> = (0 until count)
+            .map { UUID.randomUUID() }
+            .map { AlchemistServer(it, etcdKVStore) }
+            .toList()
         private const val SERVERS_TO_LAUNCH = 2
         private val ETCD_SERVER_ENDPOINTS =
             listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
