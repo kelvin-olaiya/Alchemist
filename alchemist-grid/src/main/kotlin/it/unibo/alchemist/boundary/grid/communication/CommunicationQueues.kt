@@ -14,23 +14,11 @@ import java.util.UUID
 /**
  * Server related data for the correct cluster management.
  */
-class CommunicationQueues(
-    serverID: UUID,
+enum class CommunicationQueues(
+    private val queueName: String,
 ) {
-    private val queues: MutableMap<String, String> = mutableMapOf()
+    HEALTH("health"),
+    JOBS("jobs"), ;
 
-    init {
-        queues[HEALTH_QUEUE] = queueNameFor(serverID, HEALTH_QUEUE)
-        queues[JOBS_QUEUE] = queueNameFor(serverID, JOBS_QUEUE)
-    }
-
-    private fun queueNameFor(serverID: UUID, topic: String) = "$serverID-$topic"
-
-    val hearthbeats get() = queues[HEALTH_QUEUE]
-    val jobOrders get() = queues[JOBS_QUEUE]
-
-    companion object {
-        private const val HEALTH_QUEUE = "health"
-        private const val JOBS_QUEUE = "jobs"
-    }
+    fun of(serverID: UUID) = "$serverID-$queueName"
 }

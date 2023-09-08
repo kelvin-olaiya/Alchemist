@@ -18,11 +18,22 @@ import java.util.UUID
 class ClusterImpl(
     private val storage: KVStore,
 ) : Cluster {
+
     override val nodes: Collection<ClusterNode> get() = storage
         .get(AlchemistServer.SERVERS_KEY)
         .map { ClusterMessages.Registration.parseFrom(it.bytes) }
         .map { AlchemistClusterNode(UUID.fromString(it.serverID), java.util.Map.copyOf(it.metadataMap)) }
         .toList()
+
+    private val onClusterJoinCallbacks = mutableSetOf<(List<UUID>, List<UUID>) -> Unit>()
+
+    override fun addOnClusterJoinCallback(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit) {
+        onClusterJoinCallbacks.add(callback)
+    }
+
+    override fun removeOnClusterJoinCallback(callback: (List<UUID>, List<UUID>) -> Unit) {
+        onClusterJoinCallbacks.remove(callback)
+    }
 
     override fun workerSet(simulationComplexity: Complexity): Dispatcher =
         BatchDispatcher(nodes, DispatchStrategyFactory.roundRobin, storage)

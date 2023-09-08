@@ -12,6 +12,9 @@ package it.unibo.alchemist.boundary.grid.cluster.storage
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
 import io.etcd.jetcd.options.GetOption
+import io.etcd.jetcd.options.WatchOption
+import io.etcd.jetcd.watch.WatchEvent.EventType
+import java.io.Closeable
 
 class EtcdKVStore(
     endpoints: List<String>,
@@ -19,6 +22,7 @@ class EtcdKVStore(
 
     private val client = Client.builder().endpoints(*endpoints.toTypedArray()).build()
     private val kvClient = client.kvClient
+    private val watch = client.watchClient
 
     override fun get(key: String, isPrefix: Boolean): Collection<ByteSequence> {
         val response = kvClient.get(key.toByteSequence(), GetOption.newBuilder().isPrefix(isPrefix).build()).get()
@@ -32,6 +36,33 @@ class EtcdKVStore(
     override fun delete(key: String) {
         kvClient.delete(key.toByteSequence()).join()
     }
+
+    private fun watch(
+        key: String,
+        callback: (new: ByteSequence, prev: ByteSequence) -> Unit,
+        watchEvents: Collection<EventType>,
+    ): Closeable {
+        return watch.watch(key.toByteSequence(), WatchOption.newBuilder().isPrefix(true).build()) {
+            it.events.forEach { event ->
+                if (event.eventType in watchEvents) callback(event.keyValue.value, event.prevKV.value)
+            }
+        }
+    }
+
+    override fun watch(
+        key: String,
+        callback: (new: ByteSequence, prev: ByteSequence) -> Unit,
+    ): Closeable = watch(key, callback, setOf(EventType.PUT, EventType.DELETE))
+
+    override fun watchPut(
+        key: String,
+        callback: (new: ByteSequence, prev: ByteSequence) -> Unit,
+    ): Closeable = watch(key, callback, setOf(EventType.PUT))
+
+    override fun watchDelete(
+        key: String,
+        callback: (new: ByteSequence, prev: ByteSequence) -> Unit,
+    ): Closeable = watch(key, callback, setOf(EventType.DELETE))
 
     override fun close() {
         kvClient.close()

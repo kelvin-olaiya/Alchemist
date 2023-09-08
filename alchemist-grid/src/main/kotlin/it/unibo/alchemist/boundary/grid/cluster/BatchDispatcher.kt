@@ -32,12 +32,10 @@ class BatchDispatcher(
         val jobIDs = submitSimulationBatch(batch)
         val assignements = dispatchStrategy.makeAssignments(nodes.toList(), jobIDs)
         assignements.entries.forEach {
-            val serverQueues = CommunicationQueues(it.key.serverID)
-            serverQueues.jobOrders?.let { jobQueue ->
-                it.value.forEach { jobID ->
-                    val message = SimulationMessage.RunSimulation.newBuilder().setJobID(jobID.toString()).build()
-                    publishToQueue(jobQueue, message.toByteArray())
-                }
+            val jobQueue = CommunicationQueues.JOBS.of(it.key.serverID)
+            it.value.forEach { jobID ->
+                val message = SimulationMessage.RunSimulation.newBuilder().setJobID(jobID.toString()).build()
+                publishToQueue(jobQueue, message.toByteArray())
             }
         }
         return jobIDs
@@ -66,7 +64,7 @@ class BatchDispatcher(
     ): List<UUID> {
         val jobIDs = mutableListOf<UUID>()
         initializers.forEach {
-            val initializedEnvironment = loader.getWith<Any, _>(initializers.first().variables)
+            val initializedEnvironment = loader.getWith<Any, _>(it.variables)
             val serializedEnvironment = serializeObject(initializedEnvironment.environment).toByteString()
             val serializedExporters = serializeObject(initializedEnvironment.exporters).toByteString()
             val protoJob = SimulationMessage.Simulation.newBuilder()

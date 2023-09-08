@@ -10,6 +10,7 @@
 package it.unibo.alchemist.boundary.grid.cluster.storage
 
 import io.etcd.jetcd.ByteSequence
+import java.io.Closeable
 
 interface KVStore : AutoCloseable {
 
@@ -20,6 +21,18 @@ interface KVStore : AutoCloseable {
     fun put(key: String, bytes: ByteArray) = put(key, bytes.toByteSequence())
 
     fun delete(key: String)
+
+    fun watch(key: String, callback: (new: ByteSequence, prev: ByteSequence) -> Unit): Closeable
+
+    fun watchPut(
+        key: String,
+        callback: (new: ByteSequence, prev: ByteSequence) -> Unit,
+    ): Closeable
+
+    fun watchDelete(
+        key: String,
+        callback: (new: ByteSequence, prev: ByteSequence) -> Unit,
+    ): Closeable
 
     companion object {
         private fun ByteArray.toByteSequence() = ByteSequence.from(this)

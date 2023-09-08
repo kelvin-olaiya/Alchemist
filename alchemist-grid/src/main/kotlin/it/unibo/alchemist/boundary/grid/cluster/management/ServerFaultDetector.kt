@@ -12,7 +12,10 @@ package it.unibo.alchemist.boundary.grid.cluster.management
 import com.rabbitmq.client.AMQP
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
 import it.unibo.alchemist.proto.ClusterMessages
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
@@ -22,6 +25,7 @@ class ServerFaultDetector(
     val maxReplyMiss: Int,
     val onFaultDetection: (UUID) -> Unit = {},
 ) : Runnable {
+    private val logger = LoggerFactory.getLogger(ServerFaultDetector::class.java)
     private val responsesQueue = channel.queueDeclare().queue
     private val hearthbeatMessage =
         ClusterMessages.HealthCheckRequest.newBuilder().setReplyTo(responsesQueue).build()
@@ -30,26 +34,26 @@ class ServerFaultDetector(
     private val mutex = ReentrantLock()
 
     override fun run() {
-        while (true) {
-            var hasReplied = false
-            if (!callbackRegistered) {
-                channel.basicConsume(responsesQueue, true, { _, delivery ->
-                    val response = ClusterMessages.HealthCheckResponse.parseFrom(delivery.body)
-                    mutex.lock()
-                    if (response.serverID == toWatchServerID.toString()) {
-                        hasReplied = true
-                        replyMisses = 0
-                    }
-                    mutex.unlock()
-                }, { _ -> })
-                callbackRegistered = true
+        var hasReplied: Boolean
+        registerQueueConsumer(responsesQueue) { _, delivery ->
+            val response = ClusterMessages.HealthCheckResponse.parseFrom(delivery.body)
+            logger.debug("Received heartbeat response from server {}", toWatchServerID)
+            mutex.lock()
+            if (response.serverID == toWatchServerID.toString()) {
+                hasReplied = true
+                replyMisses = 0
             }
-            channel.basicPublish(
-                "",
-                CommunicationQueues(toWatchServerID).hearthbeats,
-                AMQP.BasicProperties().builder().replyTo(responsesQueue).build(),
+            mutex.unlock()
+        }
+        logger.debug("server checker started!")
+        while (true) {
+            hasReplied = false
+            publishToQueue(
+                CommunicationQueues.HEALTH.of(toWatchServerID),
                 hearthbeatMessage.toByteArray(),
+                AMQP.BasicProperties().builder().replyTo(responsesQueue).build(),
             )
+            logger.debug("Sent heartbeat request for server {}", toWatchServerID)
             Thread.sleep(timeoutMillis)
             mutex.lock()
             if (!hasReplied) {

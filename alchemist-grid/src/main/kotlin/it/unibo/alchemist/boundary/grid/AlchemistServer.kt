@@ -11,9 +11,11 @@ package it.unibo.alchemist.boundary.grid
 
 import com.google.protobuf.ByteString
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
+import it.unibo.alchemist.boundary.grid.cluster.management.ClusterFaultDetector
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
 import it.unibo.alchemist.boundary.grid.simulation.ObservableSimulation
 import it.unibo.alchemist.core.Engine
@@ -22,8 +24,10 @@ import it.unibo.alchemist.model.Environment
 import it.unibo.alchemist.model.Position
 import it.unibo.alchemist.model.times.DoubleTime
 import it.unibo.alchemist.proto.ClusterMessages
+import it.unibo.alchemist.proto.ClusterMessages.HealthCheckResponse
 import it.unibo.alchemist.proto.SimulationMessage
 import it.unibo.alchemist.proto.SimulationMessage.RunSimulation
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ObjectInputStream
 import java.util.UUID
@@ -35,23 +39,35 @@ class AlchemistServer(
     private val serverID: UUID,
     private val storage: KVStore,
 ) {
-
+    private val logger = LoggerFactory.getLogger(AlchemistServer::class.java)
     private val executor =
         Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
     private val assignedJobs = mutableMapOf<UUID, Future<*>>()
-    private val queues = CommunicationQueues(serverID)
+    private val heartbeatResponse = HealthCheckResponse.newBuilder()
+        .setServerID(serverID.toString())
+        .build()
+        .toByteArray()
 
     init {
-        queues.jobOrders?.let {
-            declareQueue(it)
-            registerQueueConsumer(it) { _, delivery ->
-                val jobID = UUID.fromString(RunSimulation.parseFrom(delivery.body).jobID)
-                val simulation = ObservableSimulation(getSimulation<Any, _>(jobID), jobID)
-                simulation.addCompletionCallback { println("simulation terminated") }
-                val future = executor.submit(simulation)
-                assignedJobs[jobID] = future
-            }
+        Thread(ClusterFaultDetector(serverID, storage, 1500, 3)).start()
+        val jobQueue = CommunicationQueues.JOBS.of(serverID)
+        declareQueue(jobQueue)
+        registerQueueConsumer(jobQueue) { _, delivery ->
+            val jobID = UUID.fromString(RunSimulation.parseFrom(delivery.body).jobID)
+            val simulation = ObservableSimulation(getSimulation<Any, _>(jobID), jobID)
+            simulation.addCompletionCallback { println("simulation terminated") }
+            val future = executor.submit(simulation)
+            assignedJobs[jobID] = future
         }
+        val heartbeatQueue = CommunicationQueues.HEALTH.of(serverID)
+        declareQueue(heartbeatQueue)
+        registerQueueConsumer(heartbeatQueue) { _, delivery ->
+            logger.debug("Heartbeat request received")
+            val replyTo = delivery.properties.replyTo
+            publishToQueue(replyTo, heartbeatResponse)
+            logger.debug("Sent heartbeat response")
+        }
+        logger.debug("{} registered helth queue --- {}", serverID, heartbeatQueue)
     }
 
     fun register(serverMetadata: Map<String, String> = mapOf()) {
