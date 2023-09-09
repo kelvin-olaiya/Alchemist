@@ -15,6 +15,7 @@ import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
+import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
@@ -25,6 +26,8 @@ import it.unibo.alchemist.model.Position
 import it.unibo.alchemist.model.times.DoubleTime
 import it.unibo.alchemist.proto.ClusterMessages
 import it.unibo.alchemist.proto.SimulationMessage
+import it.unibo.alchemist.proto.SimulationMessage.Assignment
+import it.unibo.alchemist.proto.SimulationMessage.SimulationStatus
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
@@ -115,16 +118,51 @@ class ClusterRegistry(
             .map { it.first }
     }
 
+    override fun assignJob(jobID: UUID, serverID: UUID) {
+        val simulationID = simulationID(jobID)
+        val assignment = Assignment.newBuilder()
+            .setSimulationID(simulationID.toString())
+            .setJobID(jobID.toString())
+            .setServerID(serverID.toString())
+            .build()
+        storage.put(KEYS.ASSIGNMENTS.make(simulationID, jobID), assignment.toByteArray())
+    }
+
+    override fun unassignJob(jobID: UUID) {
+        val simulationID = simulationID(jobID)
+        storage.delete(KEYS.ASSIGNMENTS.make(simulationID.toString(), jobID.toString()))
+    }
+
+    override fun reassignJob(jobID: UUID, serverID: UUID) {
+        unassignJob(jobID)
+        assignJob(jobID, serverID)
+    }
+
+    override fun assignedTo(jobID: UUID): UUID {
+        val simulationID = simulationID(jobID)
+        val assignmentBytes = storage.get(KEYS.ASSIGNMENTS.make(simulationID.toString(), jobID.toString()))
+            .first()
+            .bytes
+        val assignment = Assignment.parseFrom(assignmentBytes)
+        return UUID.fromString(assignment.serverID)
+    }
+
     override fun assignedJobs(serverID: UUID): Collection<UUID> {
-        TODO("Not yet implemented")
+        return storage.get(KEYS.ASSIGNMENTS.prefix)
+            .map { Assignment.parseFrom(it.bytes) }
+            .filter { UUID.fromString(it.serverID) == serverID }
+            .map { UUID.fromString(it.jobID) }
     }
 
-    override fun assignedJob(serverID: UUID, simulationID: UUID): Collection<UUID> {
-        TODO("Not yet implemented")
+    override fun assignedJobs(serverID: UUID, simulationID: UUID): Collection<UUID> {
+        return simulationAssignments(simulationID)[serverID] ?: emptyList()
     }
 
-    override fun simulationAssignments(simulationID: UUID): Map<UUID, UUID> {
-        TODO("Not yet implemented")
+    override fun simulationAssignments(simulationID: UUID): Map<UUID, Collection<UUID>> {
+        return storage.get(KEYS.ASSIGNMENTS.make(simulationID))
+            .map { Assignment.parseFrom(it.bytes) }
+            .groupBy { UUID.fromString(it.serverID) }
+            .mapValues { assignments -> assignments.value.map { UUID.fromString(it.jobID) } }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -143,12 +181,18 @@ class ClusterRegistry(
         return SimulationMessage.Simulation.parseFrom(job)
     }
 
-    override fun jobStatus(jobID: UUID) {
-        TODO("Not yet implemented")
+    override fun jobStatus(jobID: UUID): Pair<JobStatus, UUID> {
+        val simulationStatus = storage.get(KEYS.JOB_STATUS.make(jobID)).first().bytes
+        val status = SimulationStatus.parseFrom(simulationStatus)
+        return JobStatus.fromProto(status.status) to UUID.fromString(status.serverID)
     }
 
-    override fun setJobStatus(serverID: UUID, jobID: UUID, status: Any) {
-        TODO("Not yet implemented")
+    override fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus) {
+        val simulationStatus = SimulationStatus.newBuilder()
+            .setStatus(status.proto)
+            .setServerID(serverID.toString())
+            .build()
+        storage.put(KEYS.JOB_STATUS.make(jobID), simulationStatus.toByteArray())
     }
 
     override fun addResult(jobID: UUID, name: String, result: ByteArray) {

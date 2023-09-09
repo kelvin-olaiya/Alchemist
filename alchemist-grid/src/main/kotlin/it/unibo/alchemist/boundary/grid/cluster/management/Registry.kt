@@ -10,6 +10,7 @@
 package it.unibo.alchemist.boundary.grid.cluster.management
 
 import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
+import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import it.unibo.alchemist.core.Simulation
@@ -60,6 +61,14 @@ interface Registry {
      */
     fun simulationJobs(simulationID: UUID): Collection<UUID>
 
+    fun assignJob(jobID: UUID, serverID: UUID)
+
+    fun unassignJob(jobID: UUID)
+
+    fun reassignJob(jobID: UUID, serverID: UUID)
+
+    fun assignedTo(jobID: UUID): UUID
+
     /**
      * Get all assigned job to the [serverID].
      */
@@ -68,12 +77,12 @@ interface Registry {
     /**
      * Get the [simulationID] assigned job to the [serverID].
      */
-    fun assignedJob(serverID: UUID, simulationID: UUID): Collection<UUID>
+    fun assignedJobs(serverID: UUID, simulationID: UUID): Collection<UUID>
 
     /**
      * Get a mapping between serverID and assigned jobID.
      */
-    fun simulationAssignments(simulationID: UUID): Map<UUID, UUID>
+    fun simulationAssignments(simulationID: UUID): Map<UUID, Collection<UUID>>
 
     /**
      * Get an instance of the [jobID] simulation.
@@ -83,12 +92,12 @@ interface Registry {
     /**
      * Get the status of the [jobID].
      */
-    fun jobStatus(jobID: UUID)
+    fun jobStatus(jobID: UUID): Pair<JobStatus, UUID>
 
     /**
      * Set the [jobID] status.
      */
-    fun setJobStatus(serverID: UUID, jobID: UUID, status: Any)
+    fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus)
 
     /**
      * Submit a new result.

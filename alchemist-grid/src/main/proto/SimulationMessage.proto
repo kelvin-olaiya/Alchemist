@@ -24,7 +24,25 @@ enum SimulationEventType {
   ERROR = 2;
 }
 
+enum Status {
+  DISPATCHED = 0;
+  RUNNING = 1;
+  DONE = 2;
+  FAILED = 3;
+}
+
+message SimulationStatus {
+  string serverID = 1;
+  Status status = 2;
+}
+
 message SimulationEvent {
   string jobID = 1;
   SimulationEventType type = 2;
+}
+
+message Assignment {
+  string simulationID = 1;
+  string jobID = 2;
+  string serverID = 3;
 }
