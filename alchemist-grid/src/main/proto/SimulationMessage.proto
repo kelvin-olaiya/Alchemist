@@ -17,3 +17,14 @@ message Simulation {
 message RunSimulation {
   string jobID = 1;
 }
+
+enum SimulationEventType {
+  COMPLETED = 0;
+  CANCELLED = 1;
+  ERROR = 2;
+}
+
+message SimulationEvent {
+  string jobID = 1;
+  SimulationEventType type = 2;
+}

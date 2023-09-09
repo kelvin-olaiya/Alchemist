@@ -29,10 +29,10 @@ interface Dispatcher {
     fun dispatchBatch(
         simulationConfig: SimulationConfig,
         simulationInitializers: Collection<SimulationInitializer>,
-    ): Collection<UUID> = dispatchBatch(SimulationBatchImpl(simulationConfig, simulationInitializers))
+    ): Map<UUID, SimulationInitializer> = dispatchBatch(SimulationBatchImpl(simulationConfig, simulationInitializers))
 
     /**
      * Dispatch the [SimulationBatch].
      */
-    fun dispatchBatch(batch: SimulationBatch): Collection<UUID>
+    fun dispatchBatch(batch: SimulationBatch): Map<UUID, SimulationInitializer>
 }

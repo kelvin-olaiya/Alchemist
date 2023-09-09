@@ -11,6 +11,7 @@ package it.unibo.alchemist.boundary.grid.cluster.storage
 
 import io.etcd.jetcd.ByteSequence
 import io.etcd.jetcd.Client
+import io.etcd.jetcd.options.DeleteOption
 import io.etcd.jetcd.options.GetOption
 import io.etcd.jetcd.options.WatchOption
 import io.etcd.jetcd.watch.WatchEvent.EventType
@@ -33,8 +34,8 @@ class EtcdKVStore(
         kvClient.put(key.toByteSequence(), bytes).join()
     }
 
-    override fun delete(key: String) {
-        kvClient.delete(key.toByteSequence()).join()
+    override fun delete(key: String, isPrefix: Boolean) {
+        kvClient.delete(key.toByteSequence(), DeleteOption.newBuilder().isPrefix(isPrefix).build()).join()
     }
 
     private fun watch(

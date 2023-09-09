@@ -20,7 +20,7 @@ interface KVStore : AutoCloseable {
 
     fun put(key: String, bytes: ByteArray) = put(key, bytes.toByteSequence())
 
-    fun delete(key: String)
+    fun delete(key: String, isPrefix: Boolean = false)
 
     fun watch(key: String, callback: (new: ByteSequence, prev: ByteSequence) -> Unit): Closeable
 

@@ -9,7 +9,6 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.management
 
-import com.rabbitmq.client.AMQP
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
@@ -20,9 +19,9 @@ import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
 class ServerFaultDetector(
-    val toWatchServerID: UUID,
-    val timeoutMillis: Long,
-    val maxReplyMiss: Int,
+    private val toWatchServerID: UUID,
+    private val timeoutMillis: Long,
+    private val maxReplyMiss: Int,
     val onFaultDetection: (UUID) -> Unit = {},
 ) : Runnable {
     private val logger = LoggerFactory.getLogger(ServerFaultDetector::class.java)
@@ -50,8 +49,8 @@ class ServerFaultDetector(
             hasReplied = false
             publishToQueue(
                 CommunicationQueues.HEALTH.of(toWatchServerID),
+                responsesQueue,
                 hearthbeatMessage.toByteArray(),
-                AMQP.BasicProperties().builder().replyTo(responsesQueue).build(),
             )
             logger.debug("Sent heartbeat request for server {}", toWatchServerID)
             Thread.sleep(timeoutMillis)

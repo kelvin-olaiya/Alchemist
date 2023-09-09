@@ -9,10 +9,7 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.management
 
-import io.etcd.jetcd.ByteSequence
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
-import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
-import it.unibo.alchemist.proto.ClusterMessages.Registration
 import org.slf4j.LoggerFactory
 import java.util.Collections
 import java.util.UUID
@@ -20,21 +17,20 @@ import java.util.concurrent.CountDownLatch
 
 class ClusterFaultDetector(
     private val localServerID: UUID,
-    private val storage: KVStore,
+    private val registry: ObservableRegistry,
     private val timeoutMillis: Long,
     private val maxReplyMisses: Int,
 ) : Runnable {
-    private val cluster = ClusterImpl(storage)
+    private val cluster = ClusterImpl(registry)
     private val currentlyAlive = Collections.synchronizedSet(cluster.nodes.map { it.serverID }.toMutableSet())
     private val logger = LoggerFactory.getLogger(ClusterFaultDetector::class.java)
 
     override fun run() {
         currentlyAlive.filter { it != localServerID }.forEach { possiblyStartServerFaultDetector(it) }
-        storage.watchPut(SERVERS_KEY) { new, _ ->
-            val newServerID = UUID.fromString(Registration.parseFrom(new.toByteArray()).serverID)
-            logger.debug("Fault detector watch --- {}", newServerID)
-            currentlyAlive.add(newServerID)
-            possiblyStartServerFaultDetector(newServerID)
+        registry.addServerJoinListener {
+            logger.debug("Fault detector watch --- {}", it.serverID)
+            currentlyAlive.add(it.serverID)
+            possiblyStartServerFaultDetector(it.serverID)
         }
         CountDownLatch(1).await()
     }
@@ -47,15 +43,9 @@ class ClusterFaultDetector(
             ServerFaultDetector(serverID, timeoutMillis, maxReplyMisses) {
                 currentlyAlive.remove(it)
                 logger.debug("Server {} died", it)
-                storage.delete("$SERVERS_KEY/$it")
+                registry.removeServer(it)
             },
             "Server-$serverID-fault-detector",
         ).start()
-    }
-
-    private fun ByteSequence.toByteArray() = this.bytes
-
-    companion object {
-        private const val SERVERS_KEY = "servers"
     }
 }

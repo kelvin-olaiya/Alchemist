@@ -27,6 +27,9 @@ object RabbitmqUtils {
         channel.basicPublish("", queueName, properties, payload)
     }
 
+    fun publishToQueue(queueName: String, replyTo: String, payload: ByteArray) =
+        publishToQueue(queueName, payload, AMQP.BasicProperties().builder().replyTo(replyTo).build())
+
     fun registerQueueConsumer(queueName: String, callback: DeliverCallback) {
         channel.basicConsume(queueName, false, callback) { _ -> }
     }

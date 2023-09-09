@@ -9,21 +9,15 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.AlchemistServer
-import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
+import it.unibo.alchemist.boundary.grid.cluster.management.Registry
 import it.unibo.alchemist.boundary.grid.simulation.Complexity
-import it.unibo.alchemist.proto.ClusterMessages
 import java.util.UUID
 
 class ClusterImpl(
-    private val storage: KVStore,
+    private val registry: Registry,
 ) : Cluster {
 
-    override val nodes: Collection<ClusterNode> get() = storage
-        .get(AlchemistServer.SERVERS_KEY)
-        .map { ClusterMessages.Registration.parseFrom(it.bytes) }
-        .map { AlchemistClusterNode(UUID.fromString(it.serverID), java.util.Map.copyOf(it.metadataMap)) }
-        .toList()
+    override val nodes: Collection<ClusterNode> get() = registry.nodes
 
     private val onClusterJoinCallbacks = mutableSetOf<(List<UUID>, List<UUID>) -> Unit>()
 
@@ -36,5 +30,5 @@ class ClusterImpl(
     }
 
     override fun workerSet(simulationComplexity: Complexity): Dispatcher =
-        BatchDispatcher(nodes, DispatchStrategyFactory.roundRobin, storage)
+        BatchDispatcher(nodes, DispatchStrategyFactory.roundRobin, registry)
 }
