@@ -16,6 +16,8 @@ class ResultObserver(
     val simulationID: UUID,
     private val registry: ObservableRegistry,
 ) {
-    fun saveLocally(jobID: UUID) {
+    fun saveLocally(
+        /*jobID: UUID*/
+    ) {
     }
 }

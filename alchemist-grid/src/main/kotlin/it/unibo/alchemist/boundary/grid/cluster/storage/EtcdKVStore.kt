@@ -21,14 +21,21 @@ class EtcdKVStore(
     endpoints: List<String>,
 ) : KVStore {
 
-    private val client = Client.builder().endpoints(*endpoints.toTypedArray()).build()
+    private val client = Client.builder()
+        .endpoints(*endpoints.toTypedArray())
+        .maxInboundMessageSize(Int.MAX_VALUE)
+        .build()
     private val kvClient = client.kvClient
     private val watch = client.watchClient
 
-    override fun get(key: String, isPrefix: Boolean): Collection<ByteSequence> {
+    override fun get(key: String, isPrefix: Boolean): Collection<ByteSequence> = getKVs(key, isPrefix).map { it.second }
+
+    override fun getKVs(key: String, isPrefix: Boolean): Collection<Pair<String, ByteSequence>> {
         val response = kvClient.get(key.toByteSequence(), GetOption.newBuilder().isPrefix(isPrefix).build()).get()
-        return response.kvs.map { it.value }.toList()
+        return response.kvs.map { it.key.toString() to it.value }.toList()
     }
+
+    override fun getKeys(key: String, isPrefix: Boolean): Collection<String> = getKVs(key, isPrefix).map { it.first }
 
     override fun put(key: String, bytes: ByteSequence) {
         kvClient.put(key.toByteSequence(), bytes).join()

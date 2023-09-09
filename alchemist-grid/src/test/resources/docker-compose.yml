@@ -17,7 +17,7 @@ services:
       ETCD_INITIAL_CLUSTER: node_1=http://node_1:2380,node_2=http://node_2:2380,node_3=http://node_3:2380
       ALLOW_NONE_AUTHENTICATION: 'yes'
       ETCD_INITIAL_CLUSTER_STATE: new
-      ETCD_MAX_REQUEST_BYTES: 16777216
+      ETCD_MAX_REQUEST_BYTES: 268435456
 
   node_2:
     image: bitnami/etcd
@@ -35,7 +35,7 @@ services:
       ETCD_INITIAL_CLUSTER: node_1=http://node_1:2380,node_2=http://node_2:2380,node_3=http://node_3:2380
       ALLOW_NONE_AUTHENTICATION: 'yes'
       ETCD_INITIAL_CLUSTER_STATE: new
-      ETCD_MAX_REQUEST_BYTES: 16777216
+      ETCD_MAX_REQUEST_BYTES: 268435456
   node_3:
     image: bitnami/etcd
     ports:
@@ -52,7 +52,7 @@ services:
       ETCD_INITIAL_CLUSTER: node_1=http://node_1:2380,node_2=http://node_2:2380,node_3=http://node_3:2380
       ALLOW_NONE_AUTHENTICATION: 'yes'
       ETCD_INITIAL_CLUSTER_STATE: new
-      ETCD_MAX_REQUEST_BYTES: 16777216
+      ETCD_MAX_REQUEST_BYTES: 268435456
   rabbitmq-service:
     image: rabbitmq:3-management
     restart: always

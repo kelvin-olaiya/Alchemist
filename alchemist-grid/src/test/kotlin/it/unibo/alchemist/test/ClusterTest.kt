@@ -14,6 +14,7 @@ import io.kotest.matchers.ints.shouldBeExactly
 import it.unibo.alchemist.boundary.LoadAlchemist
 import it.unibo.alchemist.boundary.grid.AlchemistServer
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
+import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegistry
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.boundary.launchers.DistributedExecution
 import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
@@ -27,7 +28,7 @@ class ClusterTest : StringSpec({
     "Cluster exposes correct number of servers" {
         val servers = startServers(SERVERS_TO_LAUNCH)
         servers.forEach { it.register() }
-        val cluster = ClusterImpl(etcdKVStore)
+        val cluster = ClusterImpl(registry)
         cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
     }
 
@@ -36,7 +37,7 @@ class ClusterTest : StringSpec({
         servers.forEach { it.register() }
         val serverToShutdown = servers.first()
         serverToShutdown.deregister()
-        val cluster = ClusterImpl(etcdKVStore)
+        val cluster = ClusterImpl(registry)
         cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
     }
 
@@ -46,19 +47,20 @@ class ClusterTest : StringSpec({
         val loader = LoadAlchemist.from(clientConfigFile)
         val client = DistributedExecution(listOf("horizontalEnd", "verticalEnd"))
         client.launch(loader)
-        Thread.sleep(2000)
+        Thread.sleep(10000)
         servers.sumOf { it.runningSimulations } shouldBeExactly 9
     }
 }) {
     companion object {
         private fun startServers(count: Int): List<AlchemistServer> = (0 until count)
             .map { UUID.randomUUID() }
-            .map { AlchemistServer(it, etcdKVStore) }
+            .map { AlchemistServer(it, registry) }
             .toList()
         private const val SERVERS_TO_LAUNCH = 2
         private val ETCD_SERVER_ENDPOINTS =
             listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
         private val etcdKVStore = EtcdKVStore(ETCD_SERVER_ENDPOINTS)
+        private val registry = ObservableClusterRegistry(etcdKVStore)
         private val serverConfigFile = Path.of("src", "test", "resources", "server-config.yml").toString()
         private val clientConfigFile = Path.of("src", "test", "resources", "client-config.yml").toString()
         private val composeFilePath = Path.of("src", "test", "resources", "docker-compose.yml").toString()

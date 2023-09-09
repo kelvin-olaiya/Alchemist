@@ -16,6 +16,10 @@ interface KVStore : AutoCloseable {
 
     fun get(key: String, isPrefix: Boolean = true): Collection<ByteSequence>
 
+    fun getKVs(key: String, isPrefix: Boolean = true): Collection<Pair<String, ByteSequence>>
+
+    fun getKeys(key: String, isPrefix: Boolean = true): Collection<String>
+
     fun put(key: String, bytes: ByteSequence)
 
     fun put(key: String, bytes: ByteArray) = put(key, bytes.toByteSequence())

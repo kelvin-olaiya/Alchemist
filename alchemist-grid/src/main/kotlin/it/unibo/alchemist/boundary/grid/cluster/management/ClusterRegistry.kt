@@ -48,7 +48,7 @@ class ClusterRegistry(
 
     override val nodes: Collection<ClusterNode>
         get() = storage
-            .get(KEYS.SERVERS.topic)
+            .get(KEYS.SERVERS.prefix)
             .map { ClusterMessages.Registration.parseFrom(it.bytes) }
             .map { AlchemistClusterNode(UUID.fromString(it.serverID), java.util.Map.copyOf(it.metadataMap)) }
             .toList()
@@ -102,11 +102,17 @@ class ClusterRegistry(
     }
 
     override fun simulationID(jobID: UUID): UUID {
-        TODO("Not yet implemented")
+        val job = getJob(jobID)
+        return UUID.fromString(job.simulationID)
     }
 
     override fun simulationJobs(simulationID: UUID): Collection<UUID> {
-        TODO("Not yet implemented")
+        return storage.getKeys(KEYS.JOBS.prefix)
+            .map { it.removePrefix(KEYS.JOBS.prefix) }
+            .map { UUID.fromString(it) }
+            .map { it to getJob(it) }
+            .filter { UUID.fromString(it.second.simulationID) == simulationID }
+            .map { it.first }
     }
 
     override fun assignedJobs(serverID: UUID): Collection<UUID> {
@@ -123,14 +129,18 @@ class ClusterRegistry(
 
     @Suppress("UNCHECKED_CAST")
     override fun <T, P : Position<P>> simulationByJobId(jobID: UUID): Simulation<T, P> {
-        val job = storage.get(KEYS.JOBS.make(jobID)).first().bytes
-        val simulation = SimulationMessage.Simulation.parseFrom(job)
-        val simulationID = simulation.simulationID
+        val job = getJob(jobID)
+        val simulationID = job.simulationID
         val config = storage.get(KEYS.SIMULATIONS.make(simulationID)).first().bytes
         val simulationConfig = SimulationMessage.SimulationConfiguration.parseFrom(config)
         // save dependencies
-        val environment: Environment<T, P> = deserializeObject(simulation.environment) as Environment<T, P>
+        val environment: Environment<T, P> = deserializeObject(job.environment) as Environment<T, P>
         return Engine(environment, simulationConfig.endStep, DoubleTime(simulationConfig.endTime))
+    }
+
+    private fun getJob(jobID: UUID): SimulationMessage.Simulation {
+        val job = storage.get(KEYS.JOBS.make(jobID)).first().bytes
+        return SimulationMessage.Simulation.parseFrom(job)
     }
 
     override fun jobStatus(jobID: UUID) {
@@ -184,6 +194,7 @@ class ClusterRegistry(
             ;
             fun make(vararg keys: String) = "$topic/${keys.joinToString("/")}"
             fun make(vararg keys: UUID) = make(*keys.map { it.toString() }.toTypedArray())
+            val prefix get() = "$topic/"
         }
     }
 }
