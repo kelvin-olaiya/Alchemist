@@ -12,6 +12,7 @@ package it.unibo.alchemist.boundary
 import it.unibo.alchemist.model.Actionable
 import it.unibo.alchemist.model.Environment
 import it.unibo.alchemist.model.Time
+import java.io.Serializable
 
 /**
  * An object that is able to extract numeric informations from an Alchemist
@@ -20,7 +21,7 @@ import it.unibo.alchemist.model.Time
  * {@link Reaction} executed and the current simulation step.
  *
  */
-interface Extractor<out E : Any> {
+interface Extractor<out E : Any> : Serializable {
 
     /**
      * Extracts properties from an environment. The returned map must either:

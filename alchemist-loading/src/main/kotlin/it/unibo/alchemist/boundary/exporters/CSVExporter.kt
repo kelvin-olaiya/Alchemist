@@ -10,24 +10,19 @@
 package it.unibo.alchemist.boundary.exporters
 
 import com.google.common.base.Charsets
+import it.unibo.alchemist.boundary.exporters.composers.CSVDocumentComposer
+import it.unibo.alchemist.boundary.exporters.composers.DocumentComposer
 import it.unibo.alchemist.model.Actionable
 import it.unibo.alchemist.model.Environment
 import it.unibo.alchemist.model.Position
 import it.unibo.alchemist.model.Time
 import it.unibo.alchemist.model.times.DoubleTime
-import it.unibo.alchemist.util.BugReporting
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.PrintStream
 import java.io.Serializable
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.SortedMap
-import java.util.TimeZone
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempDirectory
-import kotlin.reflect.KClass
 
 /**
  * Writes on file data provided by a number of {@link Extractor}s. Produces a
@@ -48,6 +43,7 @@ class CSVExporter<T, P : Position<P>> @JvmOverloads constructor(
 ) : AbstractExporter<T, P>(interval), Serializable {
 
     private lateinit var outputPrintStream: PrintStream
+    private val composer: DocumentComposer<T, P> = CSVDocumentComposer({ verboseVariablesDescriptor }, { dataExtractors })
 
     override fun setup(environment: Environment<T, P>) {
         if (!File(exportPath).exists()) {
@@ -63,98 +59,21 @@ class CSVExporter<T, P : Position<P>> @JvmOverloads constructor(
                 "the file name would be empty. Please provide a file name."
         }
         outputPrintStream = PrintStream("$path$filePrefix.$fileExtension", Charsets.UTF_8.name())
-        with(outputPrintStream) {
-            println(SEPARATOR)
-            print("# Alchemist log file - simulation started at: ")
-            print(now())
-            println(" #")
-            println(SEPARATOR)
-            println('#')
-            print("# ")
-            println(verboseVariablesDescriptor)
-            println('#')
-            println("# The columns have the following meaning: ")
-            print("# ")
-            dataExtractors.flatMap {
-                it.columnNames
-            }.forEach {
-                print(it)
-                print(" ")
-            }
-            outputPrintStream.println()
-        }
+        composer.setup(environment)
         exportData(environment, null, DoubleTime(), 0)
     }
 
     override fun exportData(environment: Environment<T, P>, reaction: Actionable<T>?, time: Time, step: Long) {
-        val line: String = dataExtractors.joinToString(separator = " ") { extractor ->
-            val data = extractor.extractDataAsText(environment, reaction, time, step)
-            val names = extractor.columnNames
-            when {
-                data.size <= 1 -> data.values.joinToString(" ")
-                // Labels and keys match
-                data.size == names.size && data.keys.containsAll(names) -> names.joinToString(" ") {
-                    requireNotNull(data[it]) {
-                        BugReporting.reportBug(
-                            "Bug in ${this::class.simpleName}",
-                            mapOf("key" to it, "data" to data),
-                        )
-                    }
-                }
-                // If the labels do not match keys, require predictable iteration order
-                else -> {
-                    require(data.hasPredictableIteration) {
-                        BugReporting.reportBug(
-                            """
-                            Extractor "${extractor::class.simpleName}" is likely bugged:
-                            1. the set of labels $names does not match the keys ${data.keys}, but iteration may fail as
-                            2. it returned a map with non-predictable iteration order of type ${data::class.simpleName}"
-                            """.trimIndent(),
-                        )
-                    }
-                    data.values.joinToString(" ")
-                }
-            }
-        }
-        outputPrintStream.println(line)
+        composer.update(environment, reaction, time, step)
     }
 
     override fun close(environment: Environment<T, P>, time: Time, step: Long) {
-        with(outputPrintStream) {
-            println(SEPARATOR)
-            print("# End of data export. Simulation finished at: ")
-            print(now())
-            println(" #")
-            println(SEPARATOR)
-            close()
-        }
+        composer.finalize(environment, time, step)
+        outputPrintStream.print(composer.text)
+        outputPrintStream.close()
     }
 
     companion object {
-        /**
-         * Character used to separate comments from data on export files.
-         */
-        private const val SEPARATOR = "#####################################################################"
-
         private val logger = LoggerFactory.getLogger(CSVExporter::class.java)
-
-        private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-
-        private fun now(): String = dateFormat.format(Date())
-
-        /**
-         * Types listed here are supported as featuring a predictable iteration order.
-         * New types that feature such support should be allow-listed here.
-         */
-        private val mapsWithPredictableIteration: List<KClass<out Map<*, *>>> = listOf(
-            LinkedHashMap::class,
-            SortedMap::class,
-        )
-
-        private val Map<String, Any>.hasPredictableIteration get() = mapsWithPredictableIteration.any { kclass ->
-            kclass.java.isAssignableFrom(this::class.java)
-        }
     }
 }

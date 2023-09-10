@@ -17,6 +17,7 @@ import it.unibo.alchemist.model.Actionable
 import it.unibo.alchemist.model.Environment
 import it.unibo.alchemist.model.Position
 import it.unibo.alchemist.model.Time
+import java.io.Serializable
 
 /**
  * Abstract implementation of a [Exporter].
@@ -24,7 +25,7 @@ import it.unibo.alchemist.model.Time
  */
 abstract class AbstractExporter<T, P : Position<P>> (
     private val samplingInterval: Double,
-) : Exporter<T, P> {
+) : Exporter<T, P>, Serializable {
 
     final override lateinit var dataExtractors: List<Extractor<*>>
         private set
