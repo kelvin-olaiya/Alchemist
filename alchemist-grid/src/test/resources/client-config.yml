@@ -29,13 +29,13 @@ deployments:
       # If the time distribution is unspecified, the SAPERE incarnation assumes a "ASAP" behavior (rate = Infinity)
       - program: "{firing} --> +{token}"
 #
-#export:
-#  - type: CSVExporter
-#    parameters:
-#      fileNameRoot: "time_export"
-#      interval: 1.5
-#    data:
-#      - time
+export:
+  - type: CSVExporter
+    parameters:
+      fileNameRoot: "time_export"
+      interval: 1.5
+    data:
+      - time
 
 terminate:
   - type: StableForSteps

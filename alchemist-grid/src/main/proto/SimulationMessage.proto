@@ -46,3 +46,9 @@ message Assignment {
   string jobID = 2;
   string serverID = 3;
 }
+
+message SimulationResult {
+  string jobID = 1;
+  string name = 2;
+  bytes content = 3;
+}

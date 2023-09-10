@@ -107,12 +107,12 @@ interface Registry {
     /**
      * Get all results related to the [jobID].
      */
-    fun getResult(jobID: UUID): Collection<Pair<String, ByteArray>>
+    fun resultsByJobID(jobID: UUID): Collection<Pair<String, ByteArray>>
 
     /**
      * Get all the results related to the [simulationID].
      */
-    fun getResults(simulationID: UUID): Collection<Pair<String, ByteArray>>
+    fun resultsBySimulationID(simulationID: UUID): Collection<Pair<String, ByteArray>>
 
     /**
      * Check if all the simulation have completed either with success or with errors.

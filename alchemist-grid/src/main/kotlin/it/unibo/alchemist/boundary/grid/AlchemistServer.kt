@@ -16,6 +16,7 @@ import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
+import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.ObservableSimulation
 import it.unibo.alchemist.proto.ClusterMessages.HealthCheckResponse
 import it.unibo.alchemist.proto.SimulationMessage.RunSimulation
@@ -45,7 +46,10 @@ class AlchemistServer(
         registerQueueConsumer(jobQueue) { _, delivery ->
             val jobID = UUID.fromString(RunSimulation.parseFrom(delivery.body).jobID)
             val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID)
-            simulation.addCompletionCallback { println("simulation terminated") }
+            simulation.addStartCallback { registry.setJobStatus(serverID, it, JobStatus.RUNNING) }
+            simulation.addCompletionCallback { registry.setJobStatus(serverID, it, JobStatus.DONE) }
+            simulation.addOnErrorCallback { id, _ -> registry.setJobStatus(serverID, id, JobStatus.FAILED) }
+            registry.setJobStatus(serverID, jobID, JobStatus.DISPATCHED)
             val future = executor.submit(simulation)
             assignedJobs[jobID] = future
         }

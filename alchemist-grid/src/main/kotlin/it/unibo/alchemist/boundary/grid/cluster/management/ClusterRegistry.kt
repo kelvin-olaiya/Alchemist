@@ -11,7 +11,9 @@ package it.unibo.alchemist.boundary.grid.cluster.management
 
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
+import it.unibo.alchemist.boundary.Exporter
 import it.unibo.alchemist.boundary.Loader
+import it.unibo.alchemist.boundary.exporters.GlobalExporter
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
@@ -27,6 +29,7 @@ import it.unibo.alchemist.model.times.DoubleTime
 import it.unibo.alchemist.proto.ClusterMessages
 import it.unibo.alchemist.proto.SimulationMessage
 import it.unibo.alchemist.proto.SimulationMessage.Assignment
+import it.unibo.alchemist.proto.SimulationMessage.SimulationResult
 import it.unibo.alchemist.proto.SimulationMessage.SimulationStatus
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -173,7 +176,10 @@ class ClusterRegistry(
         val simulationConfig = SimulationMessage.SimulationConfiguration.parseFrom(config)
         // save dependencies
         val environment: Environment<T, P> = deserializeObject(job.environment) as Environment<T, P>
-        return Engine(environment, simulationConfig.endStep, DoubleTime(simulationConfig.endTime))
+        val exports = deserializeObject(job.exports) as List<Exporter<T, P>>
+        val engine = Engine(environment, simulationConfig.endStep, DoubleTime(simulationConfig.endTime))
+        engine.addOutputMonitor(GlobalExporter(exports))
+        return engine
     }
 
     private fun getJob(jobID: UUID): SimulationMessage.Simulation {
@@ -196,19 +202,31 @@ class ClusterRegistry(
     }
 
     override fun addResult(jobID: UUID, name: String, result: ByteArray) {
-        TODO("Not yet implemented")
+        val simulationResult = SimulationResult.newBuilder()
+            .setName(name)
+            .setContent(result.toByteString())
+            .build()
+        val simulationID = simulationID(jobID)
+        storage.put(KEYS.RESULTS.make(simulationID.toString(), jobID.toString(), name), simulationResult.toByteArray())
     }
 
-    override fun getResult(jobID: UUID): Collection<Pair<String, ByteArray>> {
-        TODO("Not yet implemented")
+    override fun resultsByJobID(jobID: UUID): Collection<Pair<String, ByteArray>> {
+        return simulationResults(simulationID(jobID))
+            .filter { UUID.fromString(it.jobID) == jobID }
+            .map { it.name to it.content.toByteArray() }
     }
 
-    override fun getResults(simulationID: UUID): Collection<Pair<String, ByteArray>> {
-        TODO("Not yet implemented")
+    override fun resultsBySimulationID(simulationID: UUID): Collection<Pair<String, ByteArray>> {
+        return simulationResults(simulationID).map { it.name to it.content.toByteArray() }
+    }
+
+    private fun simulationResults(simulationID: UUID): Collection<SimulationResult> {
+        return storage.get(KEYS.RESULTS.make(simulationID)).map { SimulationResult.parseFrom(it.bytes) }
     }
 
     override fun isComplete(simulationID: UUID): Boolean {
-        TODO("Not yet implemented")
+        val jobIDs = simulationJobs(simulationID)
+        return jobIDs.map { jobStatus(it) }.all { it.first in setOf(JobStatus.DONE, JobStatus.FAILED) }
     }
 
     private fun serializeObject(obj: Any): ByteArray {
@@ -229,12 +247,12 @@ class ClusterRegistry(
 
     companion object {
         internal enum class KEYS(val topic: String) {
-            SERVERS("servers"),
-            SIMULATIONS("simulations"),
-            JOBS("jobs"),
-            JOB_STATUS("jobstatus"),
-            ASSIGNMENTS("assignments"),
-            RESULTS("results"),
+            SERVERS("servers"), // ~/serverID
+            SIMULATIONS("simulations"), // ~/simulationID
+            JOBS("jobs"), // ~/jobID
+            JOB_STATUS("jobstatus"), // ~/jobID
+            ASSIGNMENTS("assignments"), // ~/simulationID/jobID
+            RESULTS("results"), // ~/simulationID/jobID/name
             ;
             fun make(vararg keys: String) = "$topic/${keys.joinToString("/")}"
             fun make(vararg keys: UUID) = make(*keys.map { it.toString() }.toTypedArray())

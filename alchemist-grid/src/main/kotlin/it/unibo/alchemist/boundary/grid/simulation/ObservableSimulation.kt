@@ -19,13 +19,28 @@ class ObservableSimulation<T, P : Position<P>>(
 ) : Simulation<T, P> by simulation {
 
     private val onCompleteCallbacks = mutableSetOf<(UUID) -> Unit>()
+    private val onStartCallbacks = mutableSetOf<(UUID) -> Unit>()
+    private val onErrorCallbacks = mutableSetOf<(UUID, Exception) -> Unit>()
+
+    fun addStartCallback(callback: (UUID) -> Unit) {
+        onStartCallbacks.add(callback)
+    }
 
     fun addCompletionCallback(callback: (UUID) -> Unit) {
         onCompleteCallbacks.add(callback)
     }
 
+    fun addOnErrorCallback(callback: (UUID, Exception) -> Unit) {
+        onErrorCallbacks.add(callback)
+    }
+
     override fun run() {
-        simulation.run()
+        onStartCallbacks.forEach { it(jobID) }
+        try {
+            simulation.run()
+        } catch (e: Exception) {
+            onErrorCallbacks.forEach { it(jobID, e) }
+        }
         onCompleteCallbacks.forEach { it(jobID) }
     }
 }
