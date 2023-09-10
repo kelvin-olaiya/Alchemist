@@ -9,15 +9,9 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
-class AlchemistClusterNode(
+data class AlchemistClusterNode(
     override val serverID: UUID,
     override val metadata: Map<String, String>,
-) : ClusterNode {
-
-    override fun submitJob(simulationID: UUID, parameters: SimulationInitializer): UUID {
-        TODO("Not yet implemented")
-    }
-}
+) : ClusterNode

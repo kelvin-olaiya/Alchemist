@@ -9,7 +9,6 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 
 interface ClusterNode {
@@ -23,10 +22,4 @@ interface ClusterNode {
      * A mapping of the server metadata.
      */
     val metadata: Map<String, String>
-
-    /**
-     * Submit the parameters for the simulation with the provided [simulationID].
-     * Return the job id for future reference.
-     */
-    fun submitJob(simulationID: UUID, parameters: SimulationInitializer): UUID
 }

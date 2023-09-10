@@ -61,7 +61,7 @@ class ClusterRegistry(
 
     override fun submitBatch(batch: SimulationBatch): Pair<UUID, Map<UUID, SimulationInitializer>> {
         val simulationID = submitSimulationConfiguration(batch.configuration)
-        return simulationID to submitJobs(simulationID, batch.configuration.loader, batch.initializers)
+        return simulationID to createJobs(simulationID, batch.configuration.loader, batch.initializers)
     }
 
     private fun submitSimulationConfiguration(configuration: SimulationConfig): UUID {
@@ -75,26 +75,26 @@ class ClusterRegistry(
         return simulationID
     }
 
-    private fun submitJobs(
+    private fun createJobs(
         simulationID: UUID,
         loader: Loader,
         initializers: Collection<SimulationInitializer>,
     ): Map<UUID, SimulationInitializer> {
-        val jobIDs = mutableMapOf<UUID, SimulationInitializer>()
+        val jobIDToInitializers = mutableMapOf<UUID, SimulationInitializer>()
         initializers.forEach {
             val initializedEnvironment = loader.getWith<Any, _>(it.variables)
             val serializedEnvironment = serializeObject(initializedEnvironment.environment).toByteString()
             val serializedExporters = serializeObject(initializedEnvironment.exporters).toByteString()
-            val protoJob = SimulationMessage.Simulation.newBuilder()
+            val simulation = SimulationMessage.Simulation.newBuilder()
                 .setSimulationID(simulationID.toString())
                 .setEnvironment(serializedEnvironment)
                 .setExports(serializedExporters)
                 .build()
             val jobID = UUID.randomUUID()
-            storage.put(KEYS.JOBS.make(jobID), protoJob.toByteArray())
-            jobIDs[jobID] = it
+            storage.put(KEYS.JOBS.make(jobID), simulation.toByteArray())
+            jobIDToInitializers[jobID] = it
         }
-        return jobIDs
+        return jobIDToInitializers
     }
 
     override fun deleteSimulation(simulationID: UUID) {

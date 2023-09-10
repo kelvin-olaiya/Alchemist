@@ -19,7 +19,8 @@ import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueu
 import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.ObservableSimulation
 import it.unibo.alchemist.proto.ClusterMessages.HealthCheckResponse
-import it.unibo.alchemist.proto.SimulationMessage.RunSimulation
+import it.unibo.alchemist.proto.SimulationMessage
+import it.unibo.alchemist.proto.SimulationMessage.JobCommand
 import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -44,24 +45,22 @@ class AlchemistServer(
         val jobQueue = CommunicationQueues.JOBS.of(serverID)
         declareQueue(jobQueue)
         registerQueueConsumer(jobQueue) { _, delivery ->
-            val jobID = UUID.fromString(RunSimulation.parseFrom(delivery.body).jobID)
-            val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID)
-            simulation.addStartCallback { registry.setJobStatus(serverID, it, JobStatus.RUNNING) }
-            simulation.addCompletionCallback { registry.setJobStatus(serverID, it, JobStatus.DONE) }
-            simulation.addOnErrorCallback { id, _ -> registry.setJobStatus(serverID, id, JobStatus.FAILED) }
-            registry.setJobStatus(serverID, jobID, JobStatus.DISPATCHED)
-            val future = executor.submit(simulation)
-            assignedJobs[jobID] = future
+            val command = JobCommand.parseFrom(delivery.body)
+            when (command.command) {
+                SimulationMessage.JobCommandType.RUN -> runSimulation(UUID.fromString(command.jobID))
+                SimulationMessage.JobCommandType.CANCEL -> cancelSimulation(UUID.fromString(command.jobID))
+                SimulationMessage.JobCommandType.UNRECOGNIZED -> TODO()
+                null -> TODO()
+            }
         }
         val heartbeatQueue = CommunicationQueues.HEALTH.of(serverID)
         declareQueue(heartbeatQueue)
         registerQueueConsumer(heartbeatQueue) { _, delivery ->
-            logger.debug("Heartbeat request received")
             val replyTo = delivery.properties.replyTo
             publishToQueue(replyTo, heartbeatResponse)
-            logger.debug("Sent heartbeat response")
+            logger.debug("Replied to heartbeat request")
         }
-        logger.debug("{} registered helth queue --- {}", serverID, heartbeatQueue)
+        logger.debug("Server {} registered helth queue --- {}", serverID, heartbeatQueue)
     }
 
     fun register(serverMetadata: Map<String, String> = mapOf()) {
@@ -70,6 +69,20 @@ class AlchemistServer(
 
     fun deregister() {
         registry.removeServer(serverID)
+    }
+
+    private fun runSimulation(jobID: UUID) {
+        val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID)
+        simulation.addStartCallback { registry.setJobStatus(serverID, it, JobStatus.RUNNING) }
+        simulation.addCompletionCallback { registry.setJobStatus(serverID, it, JobStatus.DONE) }
+        simulation.addOnErrorCallback { id, _ -> registry.setJobStatus(serverID, id, JobStatus.FAILED) }
+        registry.setJobStatus(serverID, jobID, JobStatus.DISPATCHED)
+        val future = executor.submit(simulation)
+        assignedJobs[jobID] = future
+    }
+
+    private fun cancelSimulation(jobID: UUID) {
+        assignedJobs[jobID]?.cancel(true)
     }
 
     val cluster get() = ClusterImpl(registry)

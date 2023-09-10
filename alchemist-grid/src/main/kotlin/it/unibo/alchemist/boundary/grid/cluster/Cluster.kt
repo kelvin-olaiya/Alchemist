@@ -24,7 +24,7 @@ interface Cluster {
      */
     val nodes: Collection<ClusterNode>
 
-    fun addOnClusterJoinCallback(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit)
+    fun addServerJoinListener(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit)
 
-    fun removeOnClusterJoinCallback(callback: (List<UUID>, List<UUID>) -> Unit)
+    fun removeServerJoinListener(callback: (List<UUID>, List<UUID>) -> Unit)
 }

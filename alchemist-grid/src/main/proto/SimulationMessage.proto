@@ -2,6 +2,16 @@ syntax = "proto3";
 import "CommonMessages.proto";
 package it.unibo.alchemist.proto;
 
+enum JobCommandType {
+  RUN = 0;
+  CANCEL = 1;
+}
+
+message JobCommand {
+  string jobID = 1;
+  JobCommandType command = 2;
+}
+
 message SimulationConfiguration {
   int64 endStep = 1;
   double endTime = 2;
@@ -14,14 +24,17 @@ message Simulation {
   bytes exports = 3;
 }
 
-message RunSimulation {
-  string jobID = 1;
+enum SimulationEventType {
+  RECEIVED = 0;
+  STARTED = 1;
+  COMPLETED = 2;
+  CANCELLED = 3;
+  ERROR = 4;
 }
 
-enum SimulationEventType {
-  COMPLETED = 0;
-  CANCELLED = 1;
-  ERROR = 2;
+message SimulationEvent {
+  string jobID = 1;
+  SimulationEventType type = 2;
 }
 
 enum Status {
@@ -34,11 +47,6 @@ enum Status {
 message SimulationStatus {
   string serverID = 1;
   Status status = 2;
-}
-
-message SimulationEvent {
-  string jobID = 1;
-  SimulationEventType type = 2;
 }
 
 message Assignment {

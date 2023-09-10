@@ -31,7 +31,10 @@ class BatchDispatcher(
         assignements.entries.forEach {
             val jobQueue = CommunicationQueues.JOBS.of(it.key.serverID)
             it.value.forEach { jobID ->
-                val message = SimulationMessage.RunSimulation.newBuilder().setJobID(jobID.toString()).build()
+                val message = SimulationMessage.JobCommand.newBuilder()
+                    .setJobID(jobID.toString())
+                    .setCommand(SimulationMessage.JobCommandType.RUN)
+                    .build()
                 publishToQueue(jobQueue, eventsQueue, message.toByteArray())
                 registry.assignJob(jobID, it.key.serverID)
             }

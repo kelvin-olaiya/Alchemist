@@ -21,11 +21,11 @@ class ClusterImpl(
 
     private val onClusterJoinCallbacks = mutableSetOf<(List<UUID>, List<UUID>) -> Unit>()
 
-    override fun addOnClusterJoinCallback(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit) {
+    override fun addServerJoinListener(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit) {
         onClusterJoinCallbacks.add(callback)
     }
 
-    override fun removeOnClusterJoinCallback(callback: (List<UUID>, List<UUID>) -> Unit) {
+    override fun removeServerJoinListener(callback: (List<UUID>, List<UUID>) -> Unit) {
         onClusterJoinCallbacks.remove(callback)
     }
 
