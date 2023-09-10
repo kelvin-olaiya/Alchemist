@@ -18,7 +18,7 @@ import io.kotest.core.test.TestResult
 import it.unibo.alchemist.Alchemist
 import it.unibo.alchemist.boundary.LoadAlchemist
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
-import it.unibo.alchemist.boundary.grid.simulation.SimulationConfigFactory
+import it.unibo.alchemist.boundary.grid.simulation.SimulationConfigImpl
 import it.unibo.alchemist.model.Time
 import org.kaikikm.threadresloader.ResourceLoader
 import java.io.File
@@ -31,7 +31,7 @@ object GridTestUtils {
 
     fun getSimulationContext(yamlConfigurationPath: String): SimulationConfig {
         val loader = getLoader(ResourceLoader.getResource(yamlConfigurationPath))
-        return SimulationConfigFactory.newSimulationConfig(loader, Long.MAX_VALUE, Time.INFINITY)
+        return SimulationConfigImpl(loader, Long.MAX_VALUE, Time.INFINITY)
     }
 
     fun getDockerExtension(composeFilePath: String) =

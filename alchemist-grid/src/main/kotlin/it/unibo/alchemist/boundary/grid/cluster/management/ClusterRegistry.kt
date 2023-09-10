@@ -11,7 +11,7 @@ package it.unibo.alchemist.boundary.grid.cluster.management
 
 import com.google.protobuf.ByteString
 import com.google.protobuf.kotlin.toByteString
-import it.unibo.alchemist.boundary.Exporter
+import it.unibo.alchemist.boundary.DistributedExporter
 import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.boundary.exporters.GlobalExporter
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistClusterNode
@@ -83,6 +83,14 @@ class ClusterRegistry(
         val jobIDToInitializers = mutableMapOf<UUID, SimulationInitializer>()
         initializers.forEach {
             val initializedEnvironment = loader.getWith<Any, _>(it.variables)
+            initializedEnvironment.exporters.forEach { exporter ->
+                require(exporter is DistributedExporter) {
+                    """
+                    When using a distribution every exporter 
+                    must be an instance of ${DistributedExporter::class.simpleName}
+                    """.trimIndent()
+                }
+            }
             val serializedEnvironment = serializeObject(initializedEnvironment.environment).toByteString()
             val serializedExporters = serializeObject(initializedEnvironment.exporters).toByteString()
             val simulation = SimulationMessage.Simulation.newBuilder()
@@ -176,7 +184,11 @@ class ClusterRegistry(
         val simulationConfig = SimulationMessage.SimulationConfiguration.parseFrom(config)
         // save dependencies
         val environment: Environment<T, P> = deserializeObject(job.environment) as Environment<T, P>
-        val exports = deserializeObject(job.exports) as List<Exporter<T, P>>
+        val exports = deserializeObject(job.exports) as List<DistributedExporter<T, P>>
+        exports.forEach {
+            it.bindRegistry(this)
+            it.bindJobId(jobID)
+        }
         val engine = Engine(environment, simulationConfig.endStep, DoubleTime(simulationConfig.endTime))
         engine.addOutputMonitor(GlobalExporter(exports))
         return engine
