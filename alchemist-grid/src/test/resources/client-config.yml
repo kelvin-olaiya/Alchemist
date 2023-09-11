@@ -37,7 +37,7 @@ export:
 
 terminate:
   - type: AfterTime
-    parameters: 100
+    parameters: 100000
 
 launcher:
   type: DistributedExecution

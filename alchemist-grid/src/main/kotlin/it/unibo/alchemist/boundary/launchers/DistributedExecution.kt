@@ -10,7 +10,7 @@ package it.unibo.alchemist.boundary.launchers
 
 import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
-import it.unibo.alchemist.boundary.grid.cluster.management.ClusterRegistry
+import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegistry
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.boundary.grid.simulation.ComplexityImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatchImpl
@@ -32,7 +32,7 @@ class DistributedExecution @JvmOverloads constructor(
 
     override fun launch(loader: Loader) {
         val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
-        val cluster = ClusterImpl(ClusterRegistry(EtcdKVStore(endpoints)))
+        val cluster = ClusterImpl(ObservableClusterRegistry(EtcdKVStore(endpoints)))
         val configuration = SimulationConfigImpl(loader, Long.MAX_VALUE, Time.INFINITY)
         val initializers = loader.variables.cartesianProductOf(variables).map(::SimulationInitializer)
         val batch = SimulationBatchImpl(configuration, initializers)

@@ -22,6 +22,7 @@ class ServerFaultDetector(
     private val toWatchServerID: UUID,
     private val timeoutMillis: Long,
     private val maxReplyMiss: Int,
+    private val stopFlag: StopFlag,
     val onFaultDetection: (UUID) -> Unit = {},
 ) : Runnable {
     private val logger = LoggerFactory.getLogger(ServerFaultDetector::class.java)
@@ -46,6 +47,9 @@ class ServerFaultDetector(
         }
         logger.debug("server checker started!")
         while (true) {
+            if (stopFlag.isSet()) {
+                return
+            }
             hasReplied = false
             publishToQueue(
                 CommunicationQueues.HEALTH.of(toWatchServerID),

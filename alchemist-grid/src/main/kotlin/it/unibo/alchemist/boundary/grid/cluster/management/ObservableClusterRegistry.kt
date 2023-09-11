@@ -13,7 +13,8 @@ import io.etcd.jetcd.ByteSequence
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
-import it.unibo.alchemist.proto.ClusterMessages
+import it.unibo.alchemist.proto.ClusterMessages.Registration
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 class ObservableClusterRegistry(
@@ -21,16 +22,25 @@ class ObservableClusterRegistry(
 ) : Registry by ClusterRegistry(storage), ObservableRegistry {
 
     override fun addServerJoinListener(listener: (ClusterNode) -> Unit) {
-        storage.watchPut(ClusterRegistry.Companion.KEYS.SERVERS.topic) { new, _ ->
-            val registration = ClusterMessages.Registration.parseFrom(new.toByteArray())
+        storage.watchPut(ClusterRegistry.Companion.KEYS.SERVERS.prefix) { new, _ ->
+            val registration = Registration.parseFrom(new.toByteArray())
             val clusterNode = AlchemistClusterNode(UUID.fromString(registration.serverID), registration.metadataMap)
             listener(clusterNode)
         }
     }
 
     override fun addServerLeaveListener(listener: (UUID) -> Unit) {
-        TODO("Not yet implemented")
+        storage.watchDelete(ClusterRegistry.Companion.KEYS.SERVERS.prefix) { new, old ->
+            val newServer = Registration.parseFrom(new.bytes)
+            val oldServer = Registration.parseFrom(old.bytes)
+            logger.debug("NEW ${newServer.serverID}")
+            logger.debug("OLD ${oldServer.serverID}")
+        }
     }
 
     private fun ByteSequence.toByteArray() = this.bytes
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ObservableClusterRegistry::class.java)
+    }
 }

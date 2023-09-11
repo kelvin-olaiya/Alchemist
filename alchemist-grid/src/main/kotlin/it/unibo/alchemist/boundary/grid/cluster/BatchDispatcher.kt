@@ -9,7 +9,9 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.cluster.management.Registry
+import it.unibo.alchemist.boundary.grid.cluster.management.ClusterFaultDetector
+import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
+import it.unibo.alchemist.boundary.grid.cluster.management.StopFlag
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
@@ -27,45 +29,58 @@ import java.util.concurrent.CountDownLatch
 class BatchDispatcher(
     override val nodes: Collection<ClusterNode>,
     private val dispatchStrategy: DispatchStrategy,
-    private val registry: Registry,
+    private val registry: ObservableRegistry,
 ) : Dispatcher {
+
+    private val unreachebleNodes = mutableSetOf<ClusterNode>()
+    private val reachableNodes get() = nodes.filter { it !in unreachebleNodes }
+    private val stopFlag = StopFlag()
 
     override fun dispatchBatch(batch: SimulationBatch): BatchResult {
         val eventsQueue = channel.queueDeclare().queue
         val latch = CountDownLatch(batch.initializers.size)
         val results = mutableListOf<SimulationResult>()
-        registerQueueConsumer(eventsQueue) { _, delivery ->
-            val event = SimulationMessage.SimulationEvent.parseFrom(delivery.body)
-            when (event.type) {
-                SimulationMessage.SimulationEventType.RECEIVED -> {
-                    logger.debug("Job {} has been received by {}", event.jobID, event.serverID)
-                }
-                SimulationMessage.SimulationEventType.STARTED -> {
-                    logger.debug("Server {} has started job {}", event.serverID, event.jobID)
-                }
-                SimulationMessage.SimulationEventType.COMPLETED -> {
-                    logger.debug("Server {} has completed job {}", event.serverID, event.jobID)
-                    results.add(SimulationResultImpl(UUID.fromString(event.jobID), registry))
-                    latch.countDown()
-                    logger.debug("Remains {}", latch.count)
-                }
-                SimulationMessage.SimulationEventType.CANCELLED -> {
-                    logger.debug("Job {} has been cancelled", event.jobID)
-                    latch.countDown()
-                }
-                SimulationMessage.SimulationEventType.ERROR -> {
-                    logger.debug("Job {} has encountered an error", event.jobID)
-                    results.add(SimulationResultImpl(UUID.fromString(event.jobID), registry))
-                    latch.countDown()
-                }
-                SimulationMessage.SimulationEventType.UNRECOGNIZED -> {
-                    logger.debug("An unknow event has been received for job {}", event.jobID)
-                }
-                null -> {}
-            }
-        }
+        registerEventsHandler(eventsQueue, results, latch)
         val (simulationID, jobIDs) = registry.submitBatch(batch)
-        val assignements = dispatchStrategy.makeAssignments(nodes.toList(), jobIDs.keys.toList())
+        startClusterFaultDetector(eventsQueue)
+        makeAssignmentsAndNotify(reachableNodes, jobIDs.keys.toList(), eventsQueue, registry::assignJob)
+        latch.await()
+        stopFlag.set()
+        channel.queueDelete(eventsQueue)
+        return BatchResultImpl(simulationID, results, registry)
+    }
+
+    private fun startClusterFaultDetector(eventsQueue: String) {
+        Thread(
+            ClusterFaultDetector(
+                registry,
+                DEFAULT_TIMEOUT_MILLIS,
+                DEFAULT_MAX_REPLY_MISSSES,
+                stopFlag,
+                null,
+            ) {
+                onNodeFailure(it, eventsQueue)
+            },
+        ).start()
+    }
+
+    private fun onNodeFailure(serverID: UUID, eventsQueue: String) {
+        nodes.find { it.serverID == serverID }?.let { node ->
+            unreachebleNodes.add(node)
+            logger.debug("Server {} failed", node.serverID)
+            val assignedJobs = registry.assignedJobs(node.serverID)
+            makeAssignmentsAndNotify(reachableNodes, assignedJobs.toList(), eventsQueue, registry::reassignJob)
+            logger.debug("Jobs have been redistributed")
+        }
+    }
+
+    private fun makeAssignmentsAndNotify(
+        nodes: List<ClusterNode>,
+        jobs: List<UUID>,
+        replyTo: String,
+        afterNotify: (jobID: UUID, serverID: UUID) -> Unit,
+    ) {
+        val assignements = dispatchStrategy.makeAssignments(nodes.toList(), jobs)
         assignements.entries.forEach {
             val jobQueue = CommunicationQueues.JOBS.of(it.key.serverID)
             it.value.forEach { jobID ->
@@ -73,16 +88,58 @@ class BatchDispatcher(
                     .setJobID(jobID.toString())
                     .setCommand(SimulationMessage.JobCommandType.RUN)
                     .build()
-                publishToQueue(jobQueue, eventsQueue, message.toByteArray())
-                registry.assignJob(jobID, it.key.serverID)
+                publishToQueue(jobQueue, replyTo, message.toByteArray())
+                afterNotify(jobID, it.key.serverID)
             }
         }
-        latch.await()
-        channel.queueDelete(eventsQueue)
-        return BatchResultImpl(simulationID, results, registry)
+    }
+
+    private fun registerEventsHandler(
+        eventsQueue: String,
+        results: MutableList<SimulationResult>,
+        latch: CountDownLatch,
+    ) {
+        registerQueueConsumer(eventsQueue) { _, delivery ->
+            val event = SimulationMessage.SimulationEvent.parseFrom(delivery.body)
+            when (event.type) {
+                SimulationMessage.SimulationEventType.RECEIVED -> {
+                    logger.debug("Job {} has been received by {}", event.jobID, event.serverID)
+                }
+
+                SimulationMessage.SimulationEventType.STARTED -> {
+                    logger.debug("Server {} has started job {}", event.serverID, event.jobID)
+                }
+
+                SimulationMessage.SimulationEventType.COMPLETED -> {
+                    logger.debug("Server {} has completed job {}", event.serverID, event.jobID)
+                    results.add(SimulationResultImpl(UUID.fromString(event.jobID), registry))
+                    latch.countDown()
+                    logger.debug("Remains {}", latch.count)
+                }
+
+                SimulationMessage.SimulationEventType.CANCELLED -> {
+                    logger.debug("Job {} has been cancelled", event.jobID)
+                    latch.countDown()
+                }
+
+                SimulationMessage.SimulationEventType.ERROR -> {
+                    logger.debug("Job {} has encountered an error", event.jobID)
+                    results.add(SimulationResultImpl(UUID.fromString(event.jobID), registry))
+                    latch.countDown()
+                }
+
+                SimulationMessage.SimulationEventType.UNRECOGNIZED -> {
+                    logger.debug("An unknow event has been received for job {}", event.jobID)
+                }
+
+                null -> {}
+            }
+        }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(BatchDispatcher::class.java)
+        private const val DEFAULT_TIMEOUT_MILLIS = 3000L
+        private const val DEFAULT_MAX_REPLY_MISSSES = 3
     }
 }

@@ -22,6 +22,7 @@ class BatchResultImpl(
 
     override fun saveAllLocaly(exportPath: String) {
         results.forEach { it.saveLocally(exportPath) }
+        registry.deleteSimulation(simulationID)
         registry.clearResults(simulationID)
     }
 }

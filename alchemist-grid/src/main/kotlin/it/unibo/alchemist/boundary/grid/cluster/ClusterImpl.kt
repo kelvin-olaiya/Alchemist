@@ -9,12 +9,12 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
-import it.unibo.alchemist.boundary.grid.cluster.management.Registry
+import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
 import it.unibo.alchemist.boundary.grid.simulation.Complexity
 import java.util.UUID
 
 class ClusterImpl(
-    private val registry: Registry,
+    private val registry: ObservableRegistry,
 ) : Cluster {
 
     override val nodes: Collection<ClusterNode> get() = registry.nodes

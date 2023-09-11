@@ -13,13 +13,14 @@ import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import org.slf4j.LoggerFactory
 import java.util.Collections
 import java.util.UUID
-import java.util.concurrent.CountDownLatch
 
 class ClusterFaultDetector(
-    private val localServerID: UUID,
     private val registry: ObservableRegistry,
     private val timeoutMillis: Long,
     private val maxReplyMisses: Int,
+    private val stopFlag: StopFlag,
+    private val localServerID: UUID? = null,
+    private val onNodeFault: (UUID) -> Unit = {},
 ) : Runnable {
     private val cluster = ClusterImpl(registry)
     private val currentlyAlive = Collections.synchronizedSet(cluster.nodes.map { it.serverID }.toMutableSet())
@@ -28,11 +29,12 @@ class ClusterFaultDetector(
     override fun run() {
         currentlyAlive.filter { it != localServerID }.forEach { possiblyStartServerFaultDetector(it) }
         registry.addServerJoinListener {
-            logger.debug("Fault detector watch --- {}", it.serverID)
             currentlyAlive.add(it.serverID)
             possiblyStartServerFaultDetector(it.serverID)
         }
-        CountDownLatch(1).await()
+        while (!stopFlag.isSet()) {
+            Thread.sleep(CHECK_INTERVAL)
+        }
     }
 
     private fun possiblyStartServerFaultDetector(serverID: UUID) {
@@ -40,12 +42,18 @@ class ClusterFaultDetector(
             return
         }
         Thread(
-            ServerFaultDetector(serverID, timeoutMillis, maxReplyMisses) {
+            ServerFaultDetector(serverID, timeoutMillis, maxReplyMisses, stopFlag) {
                 currentlyAlive.remove(it)
                 logger.debug("Server {} died", it)
                 registry.removeServer(it)
+                onNodeFault(it)
             },
             "Server-$serverID-fault-detector",
         ).start()
+        logger.debug("Fault detector watch will watch {}", serverID)
+    }
+
+    companion object {
+        private const val CHECK_INTERVAL = 3000L
     }
 }

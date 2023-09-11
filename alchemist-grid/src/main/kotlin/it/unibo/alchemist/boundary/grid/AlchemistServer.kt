@@ -12,6 +12,7 @@ package it.unibo.alchemist.boundary.grid
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.boundary.grid.cluster.management.ClusterFaultDetector
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
+import it.unibo.alchemist.boundary.grid.cluster.management.StopFlag
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
@@ -41,9 +42,10 @@ class AlchemistServer(
         .setServerID(serverID.toString())
         .build()
         .toByteArray()
+    private val stopFlag = StopFlag()
 
     init {
-        Thread(ClusterFaultDetector(serverID, registry, 1500, 3)).start()
+        Thread(ClusterFaultDetector(registry, 1500, 3, stopFlag, serverID)).start()
         val jobQueue = CommunicationQueues.JOBS.of(serverID)
         declareQueue(jobQueue)
         registerQueueConsumer(jobQueue) { _, delivery ->
@@ -67,7 +69,6 @@ class AlchemistServer(
         registerQueueConsumer(heartbeatQueue) { _, delivery ->
             val replyTo = delivery.properties.replyTo
             publishToQueue(replyTo, heartbeatResponse)
-            logger.debug("Replied to heartbeat request")
         }
         logger.debug("Server {} registered helth queue --- {}", serverID, heartbeatQueue)
     }
