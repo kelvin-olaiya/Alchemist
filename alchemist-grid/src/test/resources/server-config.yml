@@ -1,3 +1,4 @@
 incarnation: protelis
 launcher:
   type: ServerLauncher
+  parameters: ["../alchemist-grid/src/test/resources/distribution-config.yml"]

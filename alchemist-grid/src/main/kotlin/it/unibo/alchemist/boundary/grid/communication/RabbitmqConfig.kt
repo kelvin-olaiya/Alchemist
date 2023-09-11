@@ -12,15 +12,20 @@ package it.unibo.alchemist.boundary.grid.communication
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
+import it.unibo.alchemist.boundary.launchers.ConfigurationProvider
 
 object RabbitmqConfig {
 
-    val connection: Connection = ConnectionFactory().also {
-        it.username = "guest"
-        it.password = "guest"
-        it.host = "localhost"
-        it.port = 5672
-    }.newConnection()
+    private lateinit var connection: Connection
 
-    val channel: Channel = connection.createChannel()
+    val channel: Channel by lazy { connection.createChannel() }
+
+    fun setUpConnection(config: ConfigurationProvider.RabbitmqConnectionConfig) {
+        connection = ConnectionFactory().also {
+            it.username = config.username
+            it.password = config.password
+            it.host = config.host
+            it.port = config.port
+        }.newConnection()
+    }
 }

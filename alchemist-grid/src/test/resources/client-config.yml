@@ -41,4 +41,4 @@ terminate:
 
 launcher:
   type: DistributedExecution
-  parameters: [[verticalEnd, horizontalEnd]]
+  parameters: ["../alchemist-grid/src/test/resources/distribution-config.yml", [verticalEnd, horizontalEnd]]

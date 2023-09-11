@@ -12,22 +12,29 @@ import it.unibo.alchemist.boundary.Loader
 import it.unibo.alchemist.boundary.grid.AlchemistServer
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegistry
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig
+import it.unibo.alchemist.boundary.launchers.ConfigurationProvider.getEtcdEndpoints
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
  * Launches a service waiting for simulations to be sent over the network.
  */
-class ServerLauncher : SimulationLauncher() {
+class ServerLauncher(
+    private val configurationPath: String,
+) : SimulationLauncher() {
 
     private val logger = LoggerFactory.getLogger(ServerLauncher::class.java)
 
     override fun launch(loader: Loader) {
-        val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
+        RabbitmqConfig.setUpConnection(ConfigurationProvider.getRabbitmqConfig(configurationPath))
         val serverID = UUID.randomUUID()
         logger.debug("Server assigned ID: {}", serverID)
         val metadata = mapOf<String, String>()
-        val server = AlchemistServer(serverID, ObservableClusterRegistry(EtcdKVStore(endpoints)))
+        val server = AlchemistServer(
+            serverID,
+            ObservableClusterRegistry(EtcdKVStore(getEtcdEndpoints(configurationPath))),
+        )
         logger.debug("Registering to cluster")
         server.register(metadata)
         logger.debug("Registered to cluster")

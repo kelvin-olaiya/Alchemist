@@ -1,0 +1,7 @@
+etcd:
+  endpoints: ["http://localhost:10001", "http://localhost:10002", "http://localhost:10003"]
+rabbitmq:
+  username: "guest" # or ALCHEMIST_RABBITMQ_USERNAME=guest env
+  password: "guest" # or ALCHEMIST_RABBITMQ_PASSWORD=guest env
+  host: "localhost" # or ALCHEMIST_RABBITMQ_HOST=localhost env
+  port: 5672 # or ALCHEMIST_RABBITMQ_PORT=5672 env
