@@ -11,12 +11,13 @@ package it.unibo.alchemist.model.terminators
 
 import it.unibo.alchemist.model.Environment
 import it.unibo.alchemist.model.Time
+import java.io.Serializable
 import java.util.function.Predicate
 
 /**
  * @param endTime the end time.
  */
-class AfterTime(val endTime: Time) : Predicate<Environment<*, *>> {
+class AfterTime(val endTime: Time) : Predicate<Environment<*, *>>, Serializable {
 
     /**
      * Tries to access the simulation time from the [environment].

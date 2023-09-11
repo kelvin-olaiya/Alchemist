@@ -9,15 +9,17 @@
 
 package it.unibo.alchemist.boundary.grid.simulation
 
-import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
-import java.util.UUID
+import java.util.Optional
 
-class ResultObserver(
-    val simulationID: UUID,
-    private val registry: ObservableRegistry,
-) {
-    fun saveLocally(
-        /*jobID: UUID*/
-    ) {
-    }
+interface SimulationResult {
+
+    /**
+     *
+     */
+    val error: Optional<Throwable>
+
+    /**
+     *
+     */
+    fun saveLocally(exportPath: String)
 }

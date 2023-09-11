@@ -3,10 +3,10 @@ incarnation: sapere
 variables:
   verticalEnd: &verticalEnd
     type: LinearVariable
-    parameters: [5, 5, 7, 1]
+    parameters: [5, 5, 6, 1]
   horizontalEnd: &horizontalEnd
     type: LinearVariable
-    parameters: [5, 5, 7, 1]
+    parameters: [5, 5, 6, 1]
 
 network-model:
   type: ConnectWithinDistance
@@ -36,9 +36,9 @@ export:
       - time
 
 terminate:
-  - type: StableForSteps
-    parameters: [30, 25]
+  - type: AfterTime
+    parameters: 100
 
 launcher:
   type: DistributedExecution
-  parameters: [[verticalEnd, horizontalEnd], test]
+  parameters: [[verticalEnd, horizontalEnd]]

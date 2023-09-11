@@ -34,7 +34,8 @@ enum SimulationEventType {
 
 message SimulationEvent {
   string jobID = 1;
-  SimulationEventType type = 2;
+  string serverID = 2;
+  SimulationEventType type = 3;
 }
 
 enum Status {
@@ -47,6 +48,7 @@ enum Status {
 message SimulationStatus {
   string serverID = 1;
   Status status = 2;
+  optional bytes exception = 3;
 }
 
 message Assignment {

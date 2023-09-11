@@ -37,6 +37,7 @@ class ObservableSimulation<T, P : Position<P>>(
     override fun run() {
         onStartCallbacks.forEach { it(jobID) }
         try {
+            simulation.play()
             simulation.run()
         } catch (e: Exception) {
             onErrorCallbacks.forEach { it(jobID, e) }

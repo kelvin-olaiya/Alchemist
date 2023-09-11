@@ -9,11 +9,11 @@
 
 package it.unibo.alchemist.boundary.grid.cluster
 
+import it.unibo.alchemist.boundary.grid.simulation.BatchResult
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatchImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
-import java.util.UUID
 
 interface Dispatcher {
 
@@ -29,10 +29,10 @@ interface Dispatcher {
     fun dispatchBatch(
         simulationConfig: SimulationConfig,
         simulationInitializers: Collection<SimulationInitializer>,
-    ): Map<UUID, SimulationInitializer> = dispatchBatch(SimulationBatchImpl(simulationConfig, simulationInitializers))
+    ): BatchResult = dispatchBatch(SimulationBatchImpl(simulationConfig, simulationInitializers))
 
     /**
      * Dispatch the [SimulationBatch].
      */
-    fun dispatchBatch(batch: SimulationBatch): Map<UUID, SimulationInitializer>
+    fun dispatchBatch(batch: SimulationBatch): BatchResult
 }

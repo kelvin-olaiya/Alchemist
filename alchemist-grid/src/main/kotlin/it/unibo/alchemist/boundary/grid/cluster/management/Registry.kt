@@ -15,6 +15,7 @@ import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import it.unibo.alchemist.core.Simulation
 import it.unibo.alchemist.model.Position
+import java.util.Optional
 import java.util.UUID
 
 /**
@@ -50,6 +51,11 @@ interface Registry {
      * Removes all the simulation related information from the registry.
      */
     fun deleteSimulation(simulationID: UUID)
+
+    /**
+     * Removes simulation related results from the registry.
+     */
+    fun clearResults(simulationID: UUID)
 
     /**
      * Get the simulationID of the provided [jobID].
@@ -98,6 +104,16 @@ interface Registry {
      * Set the [jobID] status.
      */
     fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus)
+
+    /**
+     *
+     */
+    fun setJobFailure(serverID: UUID, jobID: UUID, error: Throwable)
+
+    /**
+     *
+     */
+    fun jobError(jobID: UUID): Optional<Throwable>
 
     /**
      * Submit a new result.

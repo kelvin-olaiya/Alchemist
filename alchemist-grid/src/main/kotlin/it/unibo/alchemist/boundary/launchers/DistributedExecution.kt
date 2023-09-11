@@ -18,16 +18,17 @@ import it.unibo.alchemist.boundary.grid.simulation.SimulationConfigImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import it.unibo.alchemist.model.Time
 import org.slf4j.LoggerFactory
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.createTempDirectory
 
 /**
  * Launches a simulation set on a cluster of Alchemist nodes running in server mode.
  */
-class DistributedExecution(
+class DistributedExecution @JvmOverloads constructor(
     private val variables: List<String> = emptyList(),
-    private val distributedConfigPath: String? = null,
+    private val exportPath: String = createTempDirectory("alchemist-export").absolutePathString()
+        .also { logger.warn("As no output folder is specified Alchemist will export data in $it") },
 ) : SimulationLauncher() {
-
-    private val logger = LoggerFactory.getLogger(DistributedExecution::class.java)
 
     override fun launch(loader: Loader) {
         val endpoints = listOf("http://localhost:10001", "http://localhost:10002", "http://localhost:10003")
@@ -36,7 +37,13 @@ class DistributedExecution(
         val initializers = loader.variables.cartesianProductOf(variables).map(::SimulationInitializer)
         val batch = SimulationBatchImpl(configuration, initializers)
         val workerSet = cluster.workerSet(ComplexityImpl())
-        workerSet.dispatchBatch(batch)
-        logger.debug("Simulation batch has been distributed")
+        logger.debug("Distributing simulation batch")
+        val result = workerSet.dispatchBatch(batch)
+        result.saveAllLocaly(exportPath)
+        logger.debug("Simulation batch completed")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(DistributedExecution::class.java)
     }
 }

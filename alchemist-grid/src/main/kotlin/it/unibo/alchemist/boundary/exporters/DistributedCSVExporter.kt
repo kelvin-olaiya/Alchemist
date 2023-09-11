@@ -40,11 +40,10 @@ class DistributedCSVExporter<T, P : Position<P>> @JvmOverloads constructor(
     }
 
     override fun close(environment: Environment<T, P>, time: Time, step: Long) {
-        registry.addResult(
-            jobID,
-            listOf(fileNameRoot, variablesDescriptor).joinToString(separator = "_"),
-            composer.bytes,
-        )
+        composer.finalize(environment, time, step)
+        val filePrefix = listOf(fileNameRoot, variablesDescriptor).joinToString(separator = "_")
+        val fileName = "$filePrefix.$fileExtension"
+        registry.addResult(jobID, fileName, composer.bytes)
     }
 
     override fun setup(environment: Environment<T, P>) {

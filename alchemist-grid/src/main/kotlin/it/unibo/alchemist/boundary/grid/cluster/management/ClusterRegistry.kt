@@ -35,6 +35,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.util.Optional
 import java.util.UUID
 
 class ClusterRegistry(
@@ -108,11 +109,14 @@ class ClusterRegistry(
     override fun deleteSimulation(simulationID: UUID) {
         storage.delete(KEYS.SIMULATIONS.make(simulationID))
         storage.delete(KEYS.ASSIGNMENTS.make(simulationID), true)
-        storage.delete(KEYS.RESULTS.make(simulationID), true)
         simulationJobs(simulationID).forEach {
             storage.delete(KEYS.JOBS.make(it))
             storage.delete(KEYS.JOB_STATUS.make(it))
         }
+    }
+
+    override fun clearResults(simulationID: UUID) {
+        storage.delete(KEYS.RESULTS.make(simulationID), true)
     }
 
     override fun simulationID(jobID: UUID): UUID {
@@ -200,22 +204,47 @@ class ClusterRegistry(
     }
 
     override fun jobStatus(jobID: UUID): Pair<JobStatus, UUID> {
-        val simulationStatus = storage.get(KEYS.JOB_STATUS.make(jobID)).first().bytes
-        val status = SimulationStatus.parseFrom(simulationStatus)
+        val status = getSimulationStatus(jobID)
         return JobStatus.fromProto(status.status) to UUID.fromString(status.serverID)
     }
 
     override fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus) {
-        val simulationStatus = SimulationStatus.newBuilder()
-            .setStatus(status.proto)
-            .setServerID(serverID.toString())
-            .build()
+        setJobStatus(serverID, jobID, status, null)
+    }
+
+    override fun setJobFailure(serverID: UUID, jobID: UUID, error: Throwable) {
+        setJobStatus(serverID, jobID, JobStatus.FAILED, error)
+    }
+
+    override fun jobError(jobID: UUID): Optional<Throwable> {
+        val status = getSimulationStatus(jobID)
+        return if (status.status == JobStatus.FAILED.proto && status.hasException()) {
+            Optional.of(deserializeObject(status.exception) as Throwable)
+        } else {
+            Optional.empty()
+        }
+    }
+
+    private fun getSimulationStatus(jobID: UUID): SimulationStatus {
+        val simulationStatus = storage.get(KEYS.JOB_STATUS.make(jobID)).first().bytes
+        return SimulationStatus.parseFrom(simulationStatus)
+    }
+
+    private fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus, exception: Throwable?) {
+        val simulationStatus = SimulationStatus.newBuilder().apply {
+            setStatus(status.proto)
+            setServerID(serverID.toString())
+            if (exception != null) {
+                setException(serializeObject(exception).toByteString())
+            }
+        }.build()
         storage.put(KEYS.JOB_STATUS.make(jobID), simulationStatus.toByteArray())
     }
 
     override fun addResult(jobID: UUID, name: String, result: ByteArray) {
         val simulationResult = SimulationResult.newBuilder()
             .setName(name)
+            .setJobID(jobID.toString())
             .setContent(result.toByteString())
             .build()
         val simulationID = simulationID(jobID)
