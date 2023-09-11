@@ -24,6 +24,7 @@ import it.unibo.alchemist.boundary.grid.simulation.SimulationResult
 import it.unibo.alchemist.boundary.grid.simulation.SimulationResultImpl
 import it.unibo.alchemist.proto.SimulationMessage
 import org.slf4j.LoggerFactory
+import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 
@@ -33,7 +34,7 @@ class BatchDispatcher(
     private val registry: ObservableRegistry,
 ) : Dispatcher {
 
-    private val unreachebleNodes = mutableSetOf<ClusterNode>()
+    private val unreachebleNodes = Collections.synchronizedSet(mutableSetOf<ClusterNode>())
     private val reachableNodes get() = nodes.filter { it !in unreachebleNodes }
     private val stopFlag = StopFlag()
 
@@ -43,7 +44,7 @@ class BatchDispatcher(
         val results = mutableListOf<SimulationResult>()
         registerEventsHandler(eventsQueue, results, latch)
         val (simulationID, jobIDs) = registry.submitBatch(batch)
-        startClusterFaultDetector(eventsQueue)
+        startClusterFaultDetector(simulationID, eventsQueue)
         makeAssignmentsAndNotify(reachableNodes, jobIDs.keys.toList(), eventsQueue, registry::assignJob)
         latch.await()
         stopFlag.set()
@@ -51,25 +52,19 @@ class BatchDispatcher(
         return BatchResultImpl(simulationID, results, registry)
     }
 
-    private fun startClusterFaultDetector(eventsQueue: String) {
+    private fun startClusterFaultDetector(simulationID: UUID, eventsQueue: String) {
         Thread(
-            ClusterFaultDetector(
-                registry,
-                DEFAULT_TIMEOUT_MILLIS,
-                DEFAULT_MAX_REPLY_MISSSES,
-                stopFlag,
-                null,
-            ) {
-                onNodeFailure(it, eventsQueue)
+            ClusterFaultDetector(registry, DEFAULT_TIMEOUT_MILLIS, DEFAULT_MAX_REPLY_MISSSES, stopFlag, null) {
+                onNodeFailure(it, simulationID, eventsQueue)
             },
         ).start()
     }
 
-    private fun onNodeFailure(serverID: UUID, eventsQueue: String) {
+    private fun onNodeFailure(serverID: UUID, simulationID: UUID, eventsQueue: String) {
         nodes.find { it.serverID == serverID }?.let { node ->
             unreachebleNodes.add(node)
             logger.debug("Server {} failed", node.serverID)
-            val assignedJobs = registry.assignedJobs(node.serverID)
+            val assignedJobs = registry.assignedJobs(node.serverID, simulationID)
             makeAssignmentsAndNotify(reachableNodes, assignedJobs.toList(), eventsQueue, registry::reassignJob)
             logger.debug("Jobs have been redistributed")
         }
