@@ -11,23 +11,12 @@ package it.unibo.alchemist.boundary.grid.cluster
 
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
 import it.unibo.alchemist.boundary.grid.simulation.Complexity
-import java.util.UUID
 
 class ClusterImpl(
     private val registry: ObservableRegistry,
 ) : Cluster {
 
     override val nodes: Collection<ClusterNode> get() = registry.nodes
-
-    private val onClusterJoinCallbacks = mutableSetOf<(List<UUID>, List<UUID>) -> Unit>()
-
-    override fun addServerJoinListener(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit) {
-        onClusterJoinCallbacks.add(callback)
-    }
-
-    override fun removeServerJoinListener(callback: (List<UUID>, List<UUID>) -> Unit) {
-        onClusterJoinCallbacks.remove(callback)
-    }
 
     override fun workerSet(simulationComplexity: Complexity): Dispatcher =
         BatchDispatcher(nodes, DispatchStrategyFactory.roundRobin, registry)

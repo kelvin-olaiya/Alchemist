@@ -13,7 +13,8 @@ import it.unibo.alchemist.boundary.grid.cluster.management.ClusterFaultDetector
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
 import it.unibo.alchemist.boundary.grid.cluster.management.StopFlag
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
-import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.deleteQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
 import it.unibo.alchemist.boundary.grid.simulation.BatchResult
@@ -37,7 +38,7 @@ class BatchDispatcher(
     private val stopFlag = StopFlag()
 
     override fun dispatchBatch(batch: SimulationBatch): BatchResult {
-        val eventsQueue = channel.queueDeclare().queue
+        val eventsQueue = declareQueue()
         val latch = CountDownLatch(batch.initializers.size)
         val results = mutableListOf<SimulationResult>()
         registerEventsHandler(eventsQueue, results, latch)
@@ -46,7 +47,7 @@ class BatchDispatcher(
         makeAssignmentsAndNotify(reachableNodes, jobIDs.keys.toList(), eventsQueue, registry::assignJob)
         latch.await()
         stopFlag.set()
-        channel.queueDelete(eventsQueue)
+        deleteQueue(eventsQueue)
         return BatchResultImpl(simulationID, results, registry)
     }
 

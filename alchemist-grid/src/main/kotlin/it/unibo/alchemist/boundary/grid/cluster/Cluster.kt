@@ -10,7 +10,6 @@
 package it.unibo.alchemist.boundary.grid.cluster
 
 import it.unibo.alchemist.boundary.grid.simulation.Complexity
-import java.util.UUID
 
 interface Cluster {
 
@@ -23,8 +22,4 @@ interface Cluster {
      * The remote servers currently joining the cluster.
      */
     val nodes: Collection<ClusterNode>
-
-    fun addServerJoinListener(callback: (newServers: List<UUID>, oldServers: List<UUID>) -> Unit)
-
-    fun removeServerJoinListener(callback: (List<UUID>, List<UUID>) -> Unit)
 }

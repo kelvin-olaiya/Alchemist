@@ -10,7 +10,7 @@
 package it.unibo.alchemist.boundary.grid.cluster.management
 
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
-import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.channel
+import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
 import it.unibo.alchemist.proto.ClusterMessages
@@ -26,7 +26,7 @@ class ServerFaultDetector(
     val onFaultDetection: (UUID) -> Unit = {},
 ) : Runnable {
     private val logger = LoggerFactory.getLogger(ServerFaultDetector::class.java)
-    private val responsesQueue = channel.queueDeclare().queue
+    private val responsesQueue = declareQueue()
     private val hearthbeatMessage =
         ClusterMessages.HealthCheckRequest.newBuilder().setReplyTo(responsesQueue).build()
     private var callbackRegistered = false

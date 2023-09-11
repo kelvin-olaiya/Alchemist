@@ -19,6 +19,12 @@ object RabbitmqUtils {
         channel.queueDeclare(name, false, false, false, null)
     }
 
+    fun declareQueue() = channel.queueDeclare().queue
+
+    fun deleteQueue(name: String) {
+        channel.queueDelete(name)
+    }
+
     fun publishToQueue(
         queueName: String,
         payload: ByteArray,
