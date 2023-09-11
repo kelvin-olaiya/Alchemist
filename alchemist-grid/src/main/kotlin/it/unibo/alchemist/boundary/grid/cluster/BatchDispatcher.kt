@@ -52,44 +52,6 @@ class BatchDispatcher(
         return BatchResultImpl(simulationID, results, registry)
     }
 
-    private fun startClusterFaultDetector(simulationID: UUID, eventsQueue: String) {
-        Thread(
-            ClusterFaultDetector(registry, DEFAULT_TIMEOUT_MILLIS, DEFAULT_MAX_REPLY_MISSSES, stopFlag, null) {
-                onNodeFailure(it, simulationID, eventsQueue)
-            },
-        ).start()
-    }
-
-    private fun onNodeFailure(serverID: UUID, simulationID: UUID, eventsQueue: String) {
-        nodes.find { it.serverID == serverID }?.let { node ->
-            unreachebleNodes.add(node)
-            logger.debug("Server {} failed", node.serverID)
-            val assignedJobs = registry.assignedJobs(node.serverID, simulationID)
-            makeAssignmentsAndNotify(reachableNodes, assignedJobs.toList(), eventsQueue, registry::reassignJob)
-            logger.debug("Jobs have been redistributed")
-        }
-    }
-
-    private fun makeAssignmentsAndNotify(
-        nodes: List<ClusterNode>,
-        jobs: List<UUID>,
-        replyTo: String,
-        afterNotify: (jobID: UUID, serverID: UUID) -> Unit,
-    ) {
-        val assignements = dispatchStrategy.makeAssignments(nodes.toList(), jobs)
-        assignements.entries.forEach {
-            val jobQueue = CommunicationQueues.JOBS.of(it.key.serverID)
-            it.value.forEach { jobID ->
-                val message = SimulationMessage.JobCommand.newBuilder()
-                    .setJobID(jobID.toString())
-                    .setCommand(SimulationMessage.JobCommandType.RUN)
-                    .build()
-                publishToQueue(jobQueue, replyTo, message.toByteArray())
-                afterNotify(jobID, it.key.serverID)
-            }
-        }
-    }
-
     private fun registerEventsHandler(
         eventsQueue: String,
         results: MutableList<SimulationResult>,
@@ -130,6 +92,44 @@ class BatchDispatcher(
 
                 null -> {}
             }
+        }
+    }
+
+    private fun startClusterFaultDetector(simulationID: UUID, eventsQueue: String) {
+        Thread(
+            ClusterFaultDetector(registry, DEFAULT_TIMEOUT_MILLIS, DEFAULT_MAX_REPLY_MISSSES, stopFlag, null) {
+                onNodeFailure(it, simulationID, eventsQueue)
+            },
+        ).start()
+    }
+
+    private fun makeAssignmentsAndNotify(
+        nodes: List<ClusterNode>,
+        jobs: List<UUID>,
+        replyTo: String,
+        afterNotification: (jobID: UUID, serverID: UUID) -> Unit,
+    ) {
+        val assignements = dispatchStrategy.makeAssignments(nodes.toList(), jobs)
+        assignements.entries.forEach {
+            val jobQueue = CommunicationQueues.JOBS.of(it.key.serverID)
+            it.value.forEach { jobID ->
+                val message = SimulationMessage.JobCommand.newBuilder()
+                    .setJobID(jobID.toString())
+                    .setCommand(SimulationMessage.JobCommandType.RUN)
+                    .build()
+                publishToQueue(jobQueue, replyTo, message.toByteArray())
+                afterNotification(jobID, it.key.serverID)
+            }
+        }
+    }
+
+    private fun onNodeFailure(serverID: UUID, simulationID: UUID, eventsQueue: String) {
+        nodes.find { it.serverID == serverID }?.let { node ->
+            unreachebleNodes.add(node)
+            logger.debug("Server {} failed", node.serverID)
+            val assignedJobs = registry.assignedJobs(node.serverID, simulationID)
+            makeAssignmentsAndNotify(reachableNodes, assignedJobs.toList(), eventsQueue, registry::reassignJob)
+            logger.debug("Jobs have been redistributed")
         }
     }
 
