@@ -12,7 +12,7 @@ package it.unibo.alchemist.test
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import it.unibo.alchemist.boundary.LoadAlchemist
-import it.unibo.alchemist.boundary.launchers.IgniteServerLauncher
+import it.unibo.alchemist.boundary.launchers.ServerLauncher
 import org.kaikikm.threadresloader.ResourceLoader
 import java.net.URL
 
@@ -29,7 +29,7 @@ class TestLauncher : StringSpec({
     "launcher should be correctly selected" {
         val loader = LoadAlchemist.from(CONFIG_FILE)
         val launcher = loader.launcher
-        launcher::class shouldBe IgniteServerLauncher::class
+        launcher::class shouldBe ServerLauncher::class
     }
 }) {
     companion object {

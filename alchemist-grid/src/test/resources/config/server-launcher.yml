@@ -1,3 +1,4 @@
 incarnation: protelis
 launcher:
-  type: IgniteServerLauncher
+  type: ServerLauncher
+  parameters: ["distribution-config.yml"]
