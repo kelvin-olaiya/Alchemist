@@ -82,28 +82,12 @@ class TestableProcess(
     }
 
     fun awaitOutputContains(line: String) {
-        while (stdout.exists() && stdoutAsLines().stream().noneMatch { it.contains(line) }) {
+        while (!outputContains(line)) {
             // busy wait
         }
-        if (!stdout.exists()) { throw InterruptedException() }
     }
 
-    fun awaitOutputContains(line: String, timeoutMillis: Long, onTimeout: () -> Unit) {
-        val waitingThread = Thread {
-            try {
-                awaitOutputContains(line)
-            } catch (e: InterruptedException) {
-                throw RuntimeException("Process has died")
-            }
-        }
-        with(waitingThread) {
-            start()
-            join(timeoutMillis)
-            if (isAlive) {
-                onTimeout()
-            }
-        }
-    }
+    fun outputContains(line: String) = stdout.exists() && stdoutAsLines().stream().anyMatch { it.contains(line) }
 
     fun waitFor() = process.waitFor()
 }

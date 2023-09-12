@@ -9,53 +9,67 @@
 
 package it.unibo.alchemist.test
 
+import io.kotest.assertions.nondeterministic.eventually
+import io.kotest.assertions.nondeterministic.until
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.ints.shouldBeExactly
-import it.unibo.alchemist.boundary.LoadAlchemist
-import it.unibo.alchemist.boundary.grid.AlchemistServer
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegistry
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
-import it.unibo.alchemist.boundary.launchers.DistributedExecution
 import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
+import it.unibo.alchemist.test.utils.GridTestUtils.startAlchemistProcess
+import it.unibo.alchemist.test.utils.TestableProcess
 import java.nio.file.Path
-import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 class ClusterTest : StringSpec({
 
     extensions(getDockerExtension(composeFilePath))
 
     "Cluster exposes correct number of servers" {
-        val servers = startServers(SERVERS_TO_LAUNCH)
-        servers.forEach { it.register() }
+        startServers(SERVERS_TO_LAUNCH)
         val cluster = ClusterImpl(registry)
-        cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
+        eventually(10.seconds) {
+            cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
+        }
     }
 
     "Cluster exposes correct number of servers after shutdown" {
         val servers = startServers(SERVERS_TO_LAUNCH)
-        servers.forEach { it.register() }
         val serverToShutdown = servers.first()
-        serverToShutdown.deregister()
         val cluster = ClusterImpl(registry)
-        cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+        until(10.seconds) {
+            cluster.nodes.size == SERVERS_TO_LAUNCH
+        }
+        serverToShutdown.close()
+        eventually(2.seconds) {
+            cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+        }
     }
 
     "Simulation are correctly distributed" {
-        val servers = startServers(SERVERS_TO_LAUNCH)
-        servers.forEach { it.register() }
-        val loader = LoadAlchemist.from(clientConfigFile)
-        val client = DistributedExecution(listOf("horizontalEnd", "verticalEnd"))
-        client.launch(loader)
-        Thread.sleep(10000)
-        servers.sumOf { it.runningSimulations } shouldBeExactly 9
+        startServers(SERVERS_TO_LAUNCH)
+        val cluster = ClusterImpl(registry)
+        until(10.seconds) {
+            cluster.nodes.size == SERVERS_TO_LAUNCH
+        }
+        startClient()
+        val simulations = registry.simulations()
+        until(30.seconds) {
+            simulations.size == 1
+        }
+        val simulationID = simulations.first()
+        registry.simulationJobs(simulationID) shouldHaveSize 9
     }
 }) {
     companion object {
-        private fun startServers(count: Int): List<AlchemistServer> = (0 until count)
-            .map { UUID.randomUUID() }
-            .map { AlchemistServer(it, registry) }
-            .toList()
+        private fun startServers(count: Int): List<TestableProcess> = (0 until count)
+            .map {
+                startAlchemistProcess("run", serverConfigFile, "--verbosity", "debug")
+            }.toList()
+        private fun startClient(): TestableProcess =
+            startAlchemistProcess("run", clientConfigFile, "--verbosity", "debug")
         private const val SERVERS_TO_LAUNCH = 2
         private val ETCD_SERVER_ENDPOINTS =
             listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
