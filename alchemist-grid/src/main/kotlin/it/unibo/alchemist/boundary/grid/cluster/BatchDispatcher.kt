@@ -10,6 +10,7 @@
 package it.unibo.alchemist.boundary.grid.cluster
 
 import it.unibo.alchemist.boundary.grid.cluster.management.ClusterFaultDetector
+import it.unibo.alchemist.boundary.grid.cluster.management.FaultDetector
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableRegistry
 import it.unibo.alchemist.boundary.grid.cluster.management.StopFlag
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
@@ -17,6 +18,7 @@ import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.deleteQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
+import it.unibo.alchemist.boundary.grid.exceptions.NoAvailableServerException
 import it.unibo.alchemist.boundary.grid.simulation.BatchResult
 import it.unibo.alchemist.boundary.grid.simulation.BatchResultImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
@@ -34,8 +36,12 @@ class BatchDispatcher(
     private val registry: ObservableRegistry,
 ) : Dispatcher {
 
+    private val faultDetector = FaultDetector(DEFAULT_TIMEOUT_MILLIS, DEFAULT_MAX_REPLY_MISSSES)
     private val unreachebleNodes = Collections.synchronizedSet(mutableSetOf<ClusterNode>())
-    private val reachableNodes get() = nodes.filter { it !in unreachebleNodes }
+    private val reachableNodes get(): List<ClusterNode> {
+        val result = nodes.filter { it !in unreachebleNodes }
+        return if (result.size == 1) result.filter { faultDetector.test(it.serverID) } else result
+    }
     private val stopFlag = StopFlag()
 
     override fun dispatchBatch(batch: SimulationBatch): BatchResult {
@@ -109,6 +115,9 @@ class BatchDispatcher(
         replyTo: String,
         afterNotification: (jobID: UUID, serverID: UUID) -> Unit,
     ) {
+        if (nodes.isEmpty()) {
+            throw NoAvailableServerException()
+        }
         val assignements = dispatchStrategy.makeAssignments(nodes.toList(), jobs)
         assignements.entries.forEach {
             val jobQueue = CommunicationQueues.JOBS.of(it.key.serverID)

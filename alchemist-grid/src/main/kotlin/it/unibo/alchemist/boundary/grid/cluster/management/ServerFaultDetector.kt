@@ -9,66 +9,23 @@
 
 package it.unibo.alchemist.boundary.grid.cluster.management
 
-import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
-import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.declareQueue
-import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.publishToQueue
-import it.unibo.alchemist.boundary.grid.communication.RabbitmqUtils.registerQueueConsumer
-import it.unibo.alchemist.proto.ClusterMessages
 import org.slf4j.LoggerFactory
 import java.util.UUID
-import java.util.concurrent.locks.ReentrantLock
 
 class ServerFaultDetector(
     private val toWatchServerID: UUID,
-    private val timeoutMillis: Long,
-    private val maxReplyMiss: Int,
+    timeoutMillis: Long,
+    maxReplyMiss: Int,
     private val stopFlag: StopFlag,
     val onFaultDetection: (UUID) -> Unit = {},
 ) : Runnable {
-    private val logger = LoggerFactory.getLogger(ServerFaultDetector::class.java)
-    private val responsesQueue = declareQueue()
-    private val hearthbeatMessage =
-        ClusterMessages.HealthCheckRequest.newBuilder().setReplyTo(responsesQueue).build()
-    private var callbackRegistered = false
-    private var replyMisses = 0
-    private val mutex = ReentrantLock()
-
+    private val faultDetector = FaultDetector(timeoutMillis, maxReplyMiss)
     override fun run() {
-        var hasReplied: Boolean
-        registerQueueConsumer(responsesQueue) { _, delivery ->
-            val response = ClusterMessages.HealthCheckResponse.parseFrom(delivery.body)
-            logger.debug("Received heartbeat response from server {}", toWatchServerID)
-            mutex.lock()
-            if (response.serverID == toWatchServerID.toString()) {
-                hasReplied = true
-                replyMisses = 0
-            }
-            mutex.unlock()
-        }
-        logger.debug("server checker started!")
-        while (true) {
-            if (stopFlag.isSet()) {
-                return
-            }
-            hasReplied = false
-            publishToQueue(
-                CommunicationQueues.HEALTH.of(toWatchServerID),
-                responsesQueue,
-                hearthbeatMessage.toByteArray(),
-            )
-            logger.debug("Sent heartbeat request for server {}", toWatchServerID)
-            Thread.sleep(timeoutMillis)
-            mutex.lock()
-            if (!hasReplied) {
-                replyMisses++
-            } else {
-                replyMisses = 0
-            }
-            if (replyMisses >= maxReplyMiss) {
-                onFaultDetection(toWatchServerID)
-                return
-            }
-            mutex.unlock()
-        }
+        while (!stopFlag.isSet() && faultDetector.test(toWatchServerID)) { /**/ }
+        if (!stopFlag.isSet()) onFaultDetection(toWatchServerID)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ServerFaultDetector::class.java)
     }
 }

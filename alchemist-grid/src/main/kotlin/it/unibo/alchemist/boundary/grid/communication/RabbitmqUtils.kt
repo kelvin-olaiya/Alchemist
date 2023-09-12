@@ -19,7 +19,7 @@ object RabbitmqUtils {
         channel.queueDeclare(name, false, false, false, null)
     }
 
-    fun declareQueue() = channel.queueDeclare().queue
+    fun declareQueue(): String = channel.queueDeclare().queue
 
     fun deleteQueue(name: String) {
         channel.queueDelete(name)
@@ -36,7 +36,8 @@ object RabbitmqUtils {
     fun publishToQueue(queueName: String, replyTo: String, payload: ByteArray) =
         publishToQueue(queueName, payload, AMQP.BasicProperties().builder().replyTo(replyTo).build())
 
-    fun registerQueueConsumer(queueName: String, callback: DeliverCallback) {
+    fun registerQueueConsumer(queueName: String, callback: DeliverCallback): String =
         channel.basicConsume(queueName, false, callback) { _ -> }
-    }
+
+    fun deregisterQueueConsumer(consumerTag: String) = channel.basicCancel(consumerTag)
 }
