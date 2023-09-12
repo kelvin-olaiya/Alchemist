@@ -10,6 +10,7 @@
 package it.unibo.alchemist.test.utils
 
 import com.palantir.docker.compose.DockerComposeExtension
+import io.kotest.assertions.nondeterministic.until
 import io.kotest.core.extensions.Extension
 import io.kotest.core.listeners.AfterTestListener
 import io.kotest.core.listeners.BeforeTestListener
@@ -17,6 +18,7 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import it.unibo.alchemist.Alchemist
 import it.unibo.alchemist.boundary.LoadAlchemist
+import it.unibo.alchemist.boundary.grid.cluster.Cluster
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfigImpl
 import it.unibo.alchemist.model.Time
@@ -24,8 +26,9 @@ import org.kaikikm.threadresloader.ResourceLoader
 import java.io.File
 import java.net.URL
 import kotlin.reflect.jvm.jvmName
+import kotlin.time.Duration
 
-object GridTestUtils {
+object DistributionTestUtils {
 
     fun getLoader(yaml: URL) = LoadAlchemist.from(yaml)
 
@@ -60,5 +63,27 @@ object GridTestUtils {
             .redirectError(ProcessBuilder.Redirect.to(stdErr))
             .start()
         return TestableProcess(process, stdOut, stdErr)
+    }
+
+    fun startServers(configFile: String, count: Int): List<TestableProcess> = (0 until count)
+        .map {
+            startAlchemistProcess("run", configFile, "--verbosity", "debug")
+        }.toList()
+
+    fun startClient(configFile: String): TestableProcess =
+        startAlchemistProcess("run", configFile, "--verbosity", "debug")
+
+    suspend fun awaitServerJoin(cluster: Cluster, count: Int, duration: Duration) {
+        until(duration) {
+            cluster.nodes.size == count
+        }
+    }
+
+    inline fun <T : AutoCloseable> Collection<T>.use(block: (Collection<T>) -> Unit) {
+        try {
+            block(this)
+        } finally {
+            this.forEach { it.close() }
+        }
     }
 }

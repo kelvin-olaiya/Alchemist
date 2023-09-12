@@ -22,7 +22,6 @@ object ConfigurationProvider {
         require(etcdConfiguration is Map<*, *>) {
             "Configuration for etcd must be a map"
         }
-        println(etcdConfiguration)
         val endpoints = etcdConfiguration["endpoints"]
         requireNotNull(endpoints) {
             "Endpoint must be specified for etcd"

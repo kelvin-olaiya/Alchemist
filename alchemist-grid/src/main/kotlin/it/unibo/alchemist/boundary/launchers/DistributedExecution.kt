@@ -13,7 +13,6 @@ import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegistry
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig
-import it.unibo.alchemist.boundary.grid.exceptions.NoAvailableServerException
 import it.unibo.alchemist.boundary.grid.simulation.ComplexityImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatchImpl
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfigImpl
@@ -43,13 +42,9 @@ class DistributedExecution @JvmOverloads constructor(
         val batch = SimulationBatchImpl(configuration, initializers)
         val workerSet = cluster.workerSet(ComplexityImpl())
         logger.debug("Distributing simulation batch")
-        try {
-            val result = workerSet.dispatchBatch(batch)
-            result.saveAllLocaly(exportPath)
-            logger.debug("Simulation batch completed")
-        } catch (e: NoAvailableServerException) {
-            logger.debug("Failed to execute simulation batch due to unavailability of servers")
-        }
+        val result = workerSet.dispatchBatch(batch)
+        result.saveAllLocaly(exportPath)
+        logger.debug("Simulation batch completed")
     }
 
     companion object {

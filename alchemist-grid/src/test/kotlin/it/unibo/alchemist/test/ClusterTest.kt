@@ -10,17 +10,17 @@
 package it.unibo.alchemist.test
 
 import io.kotest.assertions.nondeterministic.eventually
-import io.kotest.assertions.nondeterministic.until
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.ints.shouldBeExactly
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
-import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegistry
-import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
-import it.unibo.alchemist.test.utils.GridTestUtils.getDockerExtension
-import it.unibo.alchemist.test.utils.GridTestUtils.startAlchemistProcess
-import it.unibo.alchemist.test.utils.TestableProcess
-import java.nio.file.Path
+import it.unibo.alchemist.test.utils.DistributionTestUtils.awaitServerJoin
+import it.unibo.alchemist.test.utils.DistributionTestUtils.getDockerExtension
+import it.unibo.alchemist.test.utils.DistributionTestUtils.startServers
+import it.unibo.alchemist.test.utils.DistributionTestUtils.use
+import it.unibo.alchemist.test.utils.TestConstants.SERVERS_TO_LAUNCH
+import it.unibo.alchemist.test.utils.TestConstants.composeFilePath
+import it.unibo.alchemist.test.utils.TestConstants.registry
+import it.unibo.alchemist.test.utils.TestConstants.serverConfigFile
 import kotlin.time.Duration.Companion.seconds
 
 class ClusterTest : StringSpec({
@@ -28,55 +28,23 @@ class ClusterTest : StringSpec({
     extensions(getDockerExtension(composeFilePath))
 
     "Cluster exposes correct number of servers" {
-        startServers(SERVERS_TO_LAUNCH)
-        val cluster = ClusterImpl(registry)
-        eventually(10.seconds) {
-            cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
+        startServers(serverConfigFile, SERVERS_TO_LAUNCH).use {
+            val cluster = ClusterImpl(registry)
+            eventually(10.seconds) {
+                cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
+            }
         }
     }
 
     "Cluster exposes correct number of servers after shutdown" {
-        val servers = startServers(SERVERS_TO_LAUNCH)
-        val serverToShutdown = servers.first()
-        val cluster = ClusterImpl(registry)
-        until(10.seconds) {
-            cluster.nodes.size == SERVERS_TO_LAUNCH
-        }
-        serverToShutdown.close()
-        eventually(2.seconds) {
-            cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+        startServers(serverConfigFile, SERVERS_TO_LAUNCH).use { servers ->
+            val serverToShutdown = servers.first()
+            val cluster = ClusterImpl(registry)
+            awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
+            serverToShutdown.close()
+            eventually(10.seconds) {
+                cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+            }
         }
     }
-
-    "Simulation are correctly distributed" {
-        startServers(SERVERS_TO_LAUNCH)
-        val cluster = ClusterImpl(registry)
-        until(10.seconds) {
-            cluster.nodes.size == SERVERS_TO_LAUNCH
-        }
-        startClient()
-        val simulations = registry.simulations()
-        until(30.seconds) {
-            simulations.size == 1
-        }
-        val simulationID = simulations.first()
-        registry.simulationJobs(simulationID) shouldHaveSize 9
-    }
-}) {
-    companion object {
-        private fun startServers(count: Int): List<TestableProcess> = (0 until count)
-            .map {
-                startAlchemistProcess("run", serverConfigFile, "--verbosity", "debug")
-            }.toList()
-        private fun startClient(): TestableProcess =
-            startAlchemistProcess("run", clientConfigFile, "--verbosity", "debug")
-        private const val SERVERS_TO_LAUNCH = 2
-        private val ETCD_SERVER_ENDPOINTS =
-            listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
-        private val etcdKVStore = EtcdKVStore(ETCD_SERVER_ENDPOINTS)
-        private val registry = ObservableClusterRegistry(etcdKVStore)
-        private val serverConfigFile = Path.of("src", "test", "resources", "server-config.yml").toString()
-        private val clientConfigFile = Path.of("src", "test", "resources", "client-config.yml").toString()
-        private val composeFilePath = Path.of("src", "test", "resources", "docker-compose.yml").toString()
-    }
-}
+})

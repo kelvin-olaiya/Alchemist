@@ -11,6 +11,7 @@ package it.unibo.alchemist.test.utils
 
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.io.Closeable
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
@@ -22,7 +23,7 @@ class TestableProcess(
     private val process: Process,
     private val stdout: File,
     private val stderr: File,
-) : AutoCloseable {
+) : Closeable, AutoCloseable {
 
     private fun <R> readAll(file: File, f: Collector<in String, *, R>): R {
         try {
