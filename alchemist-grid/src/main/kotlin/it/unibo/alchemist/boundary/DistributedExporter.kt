@@ -16,12 +16,12 @@ import java.util.UUID
 interface DistributedExporter<T, P : Position<P>> : Exporter<T, P> {
 
     /**
-     *
+     * Binds the registry to this exporter.
      */
     fun bindRegistry(registry: Registry)
 
     /**
-     *
+     * Set the jobID to which this exported is related to.
      */
     fun bindJobId(jobID: UUID)
 }

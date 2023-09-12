@@ -124,6 +124,12 @@ class ClusterRegistry(
         return UUID.fromString(job.simulationID)
     }
 
+    override fun simulations(): Collection<UUID> {
+        return storage.getKeys(KEYS.SIMULATIONS.prefix)
+            .map { it.removePrefix(KEYS.SIMULATIONS.prefix) }
+            .map { UUID.fromString(it) }
+    }
+
     override fun simulationJobs(simulationID: UUID): Collection<UUID> {
         return storage.getKeys(KEYS.JOBS.prefix)
             .map { it.removePrefix(KEYS.JOBS.prefix) }

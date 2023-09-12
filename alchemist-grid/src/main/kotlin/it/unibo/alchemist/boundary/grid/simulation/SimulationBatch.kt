@@ -11,9 +11,18 @@ package it.unibo.alchemist.boundary.grid.simulation
 
 interface SimulationBatch {
 
+    /**
+     * The complexity of the simulation batch.
+     */
     val complexity: Complexity
 
+    /**
+     * The configuration batch configuration.
+     */
     val configuration: SimulationConfig
 
+    /**
+     * The batch simulations initializers.
+     */
     val initializers: Collection<SimulationInitializer>
 }

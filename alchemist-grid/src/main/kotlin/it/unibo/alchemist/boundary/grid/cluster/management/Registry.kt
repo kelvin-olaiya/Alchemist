@@ -53,26 +53,38 @@ interface Registry {
     fun deleteSimulation(simulationID: UUID)
 
     /**
-     * Removes simulation related results from the registry.
-     */
-    fun clearResults(simulationID: UUID)
-
-    /**
      * Get the simulationID of the provided [jobID].
      */
     fun simulationID(jobID: UUID): UUID
+
+    /**
+     * Returns the simulationID of the simulations submitted in the cluster.
+     */
+    fun simulations(): Collection<UUID>
 
     /**
      * Get all the job of the provided [simulationID].
      */
     fun simulationJobs(simulationID: UUID): Collection<UUID>
 
+    /**
+     * Register job assignments.
+     */
     fun assignJob(jobID: UUID, serverID: UUID)
 
+    /**
+     * Register job unassignment.
+     */
     fun unassignJob(jobID: UUID)
 
+    /**
+     * Register job reassignment.
+     */
     fun reassignJob(jobID: UUID, serverID: UUID)
 
+    /**
+     * Get the serverID of the server to which the job is assigned.
+     */
     fun assignedTo(jobID: UUID): UUID
 
     /**
@@ -106,17 +118,26 @@ interface Registry {
     fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus)
 
     /**
+     * Register the failure of the job execution.
      *
+     * @param serverID the server who encountered the failure.
+     * @param jobID the job that failed.
+     * @param error the Exception thrown.
      */
     fun setJobFailure(serverID: UUID, jobID: UUID, error: Throwable)
 
     /**
-     *
+     * @return an optional which is empty if no exception was
+     * thrown during the execution of the job or is empty otherwise
      */
     fun jobError(jobID: UUID): Optional<Throwable>
 
     /**
      * Submit a new result.
+     *
+     * @param jobID the id of the job to which the result is related.
+     * @param name the name (more likely the filename) of the job result.
+     * @param result a sequence of bytes representing the result.
      */
     fun addResult(jobID: UUID, name: String, result: ByteArray)
 
@@ -129,6 +150,11 @@ interface Registry {
      * Get all the results related to the [simulationID].
      */
     fun resultsBySimulationID(simulationID: UUID): Collection<Pair<String, ByteArray>>
+
+    /**
+     * Removes simulation related results from the registry.
+     */
+    fun clearResults(simulationID: UUID)
 
     /**
      * Check if all the simulation have completed either with success or with errors.

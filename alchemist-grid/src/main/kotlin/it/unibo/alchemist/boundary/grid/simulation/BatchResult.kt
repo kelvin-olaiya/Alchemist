@@ -11,9 +11,20 @@ package it.unibo.alchemist.boundary.grid.simulation
 
 interface BatchResult {
 
+    /**
+     * Number of errors encountered during
+     * the execution of the simulation batch.
+     */
     val numOfErrors: Int
 
+    /**
+     * A collection of result of the simulations that completed either
+     * successfully or with error
+     */
     val results: Collection<SimulationResult>
 
+    /**
+     * Utility function to save all result files locally
+     */
     fun saveAllLocaly(exportPath: String)
 }

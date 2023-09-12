@@ -10,11 +10,11 @@
 package it.unibo.alchemist.boundary.grid.cluster.management
 
 import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
-import java.util.UUID
 
 interface ObservableRegistry : Registry {
 
+    /**
+     * Registers a listener to be called whenever a server joins the cluster.
+     */
     fun addServerJoinListener(listener: (ClusterNode) -> Unit)
-
-    fun addServerLeaveListener(listener: (UUID) -> Unit)
 }

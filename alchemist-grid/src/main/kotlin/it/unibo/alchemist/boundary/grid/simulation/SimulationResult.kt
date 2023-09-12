@@ -14,12 +14,12 @@ import java.util.Optional
 interface SimulationResult {
 
     /**
-     *
+     * An optional which is filled with the exception that may have been thrown.
      */
     val error: Optional<Throwable>
 
     /**
-     *
+     * Save the result of the simulation locally.
      */
     fun saveLocally(exportPath: String)
 }

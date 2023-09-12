@@ -29,15 +29,6 @@ class ObservableClusterRegistry(
         }
     }
 
-    override fun addServerLeaveListener(listener: (UUID) -> Unit) {
-        storage.watchDelete(ClusterRegistry.Companion.KEYS.SERVERS.prefix) { new, old ->
-            val newServer = Registration.parseFrom(new.bytes)
-            val oldServer = Registration.parseFrom(old.bytes)
-            logger.debug("NEW ${newServer.serverID}")
-            logger.debug("OLD ${oldServer.serverID}")
-        }
-    }
-
     private fun ByteSequence.toByteArray() = this.bytes
 
     companion object {
