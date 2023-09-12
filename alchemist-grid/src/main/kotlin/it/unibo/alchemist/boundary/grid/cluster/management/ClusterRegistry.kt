@@ -17,6 +17,8 @@ import it.unibo.alchemist.boundary.exporters.GlobalExporter
 import it.unibo.alchemist.boundary.grid.cluster.AlchemistClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.storage.KVStore
+import it.unibo.alchemist.boundary.grid.proto.ProtoExtensions.proto
+import it.unibo.alchemist.boundary.grid.proto.ProtoExtensions.toJobStatus
 import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
@@ -211,7 +213,7 @@ class ClusterRegistry(
 
     override fun jobStatus(jobID: UUID): Pair<JobStatus, UUID> {
         val status = getSimulationStatus(jobID)
-        return JobStatus.fromProto(status.status) to UUID.fromString(status.serverID)
+        return status.status.toJobStatus to UUID.fromString(status.serverID)
     }
 
     override fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus) {
@@ -293,7 +295,7 @@ class ClusterRegistry(
     }
 
     companion object {
-        internal enum class KEYS(val topic: String) {
+        internal enum class KEYS(private val topic: String) {
             SERVERS("servers"), // ~/serverID
             SIMULATIONS("simulations"), // ~/simulationID
             JOBS("jobs"), // ~/jobID

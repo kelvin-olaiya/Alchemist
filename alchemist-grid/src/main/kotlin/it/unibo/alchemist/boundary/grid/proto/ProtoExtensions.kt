@@ -9,4 +9,24 @@
 
 package it.unibo.alchemist.boundary.grid.proto
 
-object ProtoExtensions
+import it.unibo.alchemist.boundary.grid.simulation.JobStatus
+import it.unibo.alchemist.proto.SimulationMessage.Status
+
+object ProtoExtensions {
+
+    val JobStatus.proto get() = when (this) {
+        JobStatus.DISPATCHED -> Status.DISPATCHED
+        JobStatus.RUNNING -> Status.RUNNING
+        JobStatus.DONE -> Status.DONE
+        JobStatus.FAILED -> Status.FAILED
+        JobStatus.UNRECOGNIZED -> Status.UNRECOGNIZED
+    }
+
+    val Status.toJobStatus get(): JobStatus = when (this) {
+        Status.DISPATCHED -> JobStatus.DISPATCHED
+        Status.RUNNING -> JobStatus.RUNNING
+        Status.DONE -> JobStatus.DONE
+        Status.FAILED -> JobStatus.FAILED
+        Status.UNRECOGNIZED -> JobStatus.UNRECOGNIZED
+    }
+}

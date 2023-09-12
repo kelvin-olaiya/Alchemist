@@ -9,25 +9,10 @@
 
 package it.unibo.alchemist.boundary.grid.simulation
 
-import it.unibo.alchemist.proto.SimulationMessage.Status
-
-enum class JobStatus(
-    val proto: Status,
-) {
-    DISPATCHED(Status.DISPATCHED),
-    RUNNING(Status.RUNNING),
-    DONE(Status.DONE),
-    FAILED(Status.FAILED),
-    UNRECOGNIZED(Status.UNRECOGNIZED),
-    ;
-
-    companion object {
-        fun fromProto(proto: Status) = when (proto) {
-            Status.DISPATCHED -> DISPATCHED
-            Status.RUNNING -> RUNNING
-            Status.DONE -> DONE
-            Status.FAILED -> FAILED
-            Status.UNRECOGNIZED -> UNRECOGNIZED
-        }
-    }
+enum class JobStatus {
+    DISPATCHED,
+    RUNNING,
+    DONE,
+    FAILED,
+    UNRECOGNIZED,
 }
