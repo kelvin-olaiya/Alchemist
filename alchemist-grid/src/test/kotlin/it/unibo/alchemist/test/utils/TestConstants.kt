@@ -15,14 +15,13 @@ import java.nio.file.Path
 
 object TestConstants {
     const val SERVERS_TO_LAUNCH = 2
-    private val ETCD_SERVER_ENDPOINTS =
-        listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")
-    private val etcdKVStore = EtcdKVStore(ETCD_SERVER_ENDPOINTS)
-    val registry = ObservableClusterRegistry(etcdKVStore)
+    val registry = ObservableClusterRegistry(
+        EtcdKVStore(listOf("http://localhost:10001", "http://localhost:10003", "http://localhost:10003")),
+    )
     val serverConfigFile = Path.of("src", "test", "resources", "server-config.yml").toString()
     val clientConfigFile = Path.of("src", "test", "resources", "client-config.yml").toString()
+    const val SIMULATION_BATCH_SIZE = 4
     val distributionConfigurationFile =
         Path.of("src", "test", "resources", "distribution-config.yml").toString()
     val composeFilePath = Path.of("src", "test", "resources", "docker-compose.yml").toString()
-    const val BATCH_SIZE = 4
 }

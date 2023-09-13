@@ -18,8 +18,8 @@ import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.test.utils.DistributionTestUtils
 import it.unibo.alchemist.test.utils.DistributionTestUtils.startServers
 import it.unibo.alchemist.test.utils.DistributionTestUtils.use
-import it.unibo.alchemist.test.utils.TestConstants.BATCH_SIZE
 import it.unibo.alchemist.test.utils.TestConstants.SERVERS_TO_LAUNCH
+import it.unibo.alchemist.test.utils.TestConstants.SIMULATION_BATCH_SIZE
 import it.unibo.alchemist.test.utils.TestConstants.clientConfigFile
 import it.unibo.alchemist.test.utils.TestConstants.composeFilePath
 import it.unibo.alchemist.test.utils.TestConstants.registry
@@ -39,7 +39,7 @@ class DistributionTest : StringSpec({
                     registry.simulations().size == 1
                 }
                 val simulationID = registry.simulations().first()
-                registry.simulationJobs(simulationID) shouldHaveSize BATCH_SIZE
+                registry.simulationJobs(simulationID) shouldHaveSize SIMULATION_BATCH_SIZE
             }
         }
     }
@@ -57,7 +57,7 @@ class DistributionTest : StringSpec({
                 servers.first().close()
                 eventually(15.seconds) {
                     registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH - 1
-                    registry.assignedJobs(registry.nodes.first().serverID) shouldHaveSize BATCH_SIZE
+                    registry.assignedJobs(registry.nodes.first().serverID) shouldHaveSize SIMULATION_BATCH_SIZE
                 }
             }
         }
