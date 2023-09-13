@@ -28,14 +28,14 @@ deployments:
       - program: "{firing} --> +{token}"
 #
 export:
-  - type: DistributedCSVExporter
+  - type: CSVExporter # Not allowed in batch distribution
     parameters: ["time_export", 1.5]
     data:
       - time
 
 terminate:
   - type: AfterTime
-    parameters: 50000
+    parameters: 100000
 
 launcher:
   type: DistributedExecution

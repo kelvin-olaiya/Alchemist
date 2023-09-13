@@ -18,6 +18,7 @@ import it.unibo.alchemist.test.utils.DistributionTestUtils
 import it.unibo.alchemist.test.utils.TestConstants.clientConfigFile
 import it.unibo.alchemist.test.utils.TestConstants.composeFilePath
 import it.unibo.alchemist.test.utils.TestConstants.distributionConfigurationFile
+import it.unibo.alchemist.test.utils.TestConstants.wrongExporterConfigFile
 
 class ClientTest : StringSpec({
 
@@ -27,6 +28,14 @@ class ClientTest : StringSpec({
         val loader = LoadAlchemist.from(clientConfigFile)
         val client = DistributedExecution(distributionConfigurationFile, listOf("horizontalEnd", "verticalEnd"))
         shouldThrow<NoAvailableServerException> {
+            client.launch(loader)
+        }
+    }
+
+    "Only distributed exporter are allowed" {
+        val loader = LoadAlchemist.from(wrongExporterConfigFile)
+        val client = DistributedExecution(distributionConfigurationFile, listOf("horizontalEnd", "verticalEnd"))
+        shouldThrow<IllegalArgumentException> {
             client.launch(loader)
         }
     }

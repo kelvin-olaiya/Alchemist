@@ -13,9 +13,10 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.nondeterministic.until
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
-import io.kotest.matchers.ints.shouldBeExactly
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.test.utils.DistributionTestUtils
+import it.unibo.alchemist.test.utils.DistributionTestUtils.awaitServerJoin
+import it.unibo.alchemist.test.utils.DistributionTestUtils.startClient
 import it.unibo.alchemist.test.utils.DistributionTestUtils.startServers
 import it.unibo.alchemist.test.utils.DistributionTestUtils.use
 import it.unibo.alchemist.test.utils.TestConstants.SERVERS_TO_LAUNCH
@@ -33,8 +34,8 @@ class DistributionTest : StringSpec({
     "Simulation are correctly distributed" {
         startServers(serverConfigFile, SERVERS_TO_LAUNCH).use {
             val cluster = ClusterImpl(registry)
-            DistributionTestUtils.awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
-            DistributionTestUtils.startClient(clientConfigFile).use {
+            awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
+            startClient(clientConfigFile).use {
                 until(30.seconds) {
                     registry.simulations().size == 1
                 }
@@ -47,13 +48,13 @@ class DistributionTest : StringSpec({
     "Client should redistribute workload on node fault" {
         startServers(serverConfigFile, SERVERS_TO_LAUNCH).use { servers ->
             val cluster = ClusterImpl(registry)
-            DistributionTestUtils.awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
-            DistributionTestUtils.startClient(clientConfigFile).use { _ ->
+            awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
+            startClient(clientConfigFile).use { _ ->
                 until(30.seconds) {
                     registry.simulations().size == 1
                 }
                 val simulationID = registry.simulations().first()
-                registry.simulationAssignments(simulationID).keys.size shouldBeExactly SERVERS_TO_LAUNCH
+                registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH
                 servers.first().close()
                 eventually(15.seconds) {
                     registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH - 1
