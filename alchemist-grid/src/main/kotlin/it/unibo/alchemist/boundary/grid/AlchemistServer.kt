@@ -34,18 +34,17 @@ class AlchemistServer(
     private val serverID: UUID,
     private val registry: ObservableRegistry,
 ) {
-    private val logger = LoggerFactory.getLogger(AlchemistServer::class.java)
-    private val executor =
-        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
-    private val assignedJobs = mutableMapOf<UUID, Future<*>>()
     private val heartbeatResponse = HealthCheckResponse.newBuilder()
         .setServerID(serverID.toString())
         .build()
         .toByteArray()
-    private val stopFlag = StopFlag()
+    private val faultDetectorStopFlag = StopFlag()
+    private val executor =
+        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+    private val assignedJobs = mutableMapOf<UUID, Future<*>>()
 
     init {
-        Thread(ClusterFaultDetector(registry, 1500, 3, stopFlag, serverID)).start()
+        Thread(ClusterFaultDetector(registry, 1500, 3, faultDetectorStopFlag, serverID)).start()
         val jobQueue = CommunicationQueues.JOBS.of(serverID)
         declareQueue(jobQueue)
         registerQueueConsumer(jobQueue) { _, delivery ->
@@ -122,4 +121,8 @@ class AlchemistServer(
     val cluster get() = ClusterImpl(registry)
 
     val runningSimulations get() = (executor as ThreadPoolExecutor).activeCount
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AlchemistServer::class.java)
+    }
 }
