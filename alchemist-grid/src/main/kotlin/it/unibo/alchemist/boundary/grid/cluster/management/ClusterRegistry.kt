@@ -31,6 +31,7 @@ import it.unibo.alchemist.model.times.DoubleTime
 import it.unibo.alchemist.proto.ClusterMessages
 import it.unibo.alchemist.proto.SimulationMessage
 import it.unibo.alchemist.proto.SimulationMessage.Assignment
+import it.unibo.alchemist.proto.SimulationMessage.SimulationConfiguration
 import it.unibo.alchemist.proto.SimulationMessage.SimulationResult
 import it.unibo.alchemist.proto.SimulationMessage.SimulationStatus
 import java.io.ByteArrayInputStream
@@ -191,10 +192,8 @@ class ClusterRegistry(
     @Suppress("UNCHECKED_CAST")
     override fun <T, P : Position<P>> simulationByJobId(jobID: UUID): Simulation<T, P> {
         val job = getJob(jobID)
-        val simulationID = job.simulationID
-        val config = storage.get(KEYS.SIMULATIONS.make(simulationID)).first().bytes
-        val simulationConfig = SimulationMessage.SimulationConfiguration.parseFrom(config)
-        // save dependencies
+        val simulationID = UUID.fromString(job.simulationID)
+        val simulationConfig = getSimulationConfiguration(simulationID)
         val environment: Environment<T, P> = deserializeObject(job.environment) as Environment<T, P>
         val exports = deserializeObject(job.exports) as List<DistributedExporter<T, P>>
         exports.forEach {
@@ -209,6 +208,11 @@ class ClusterRegistry(
     private fun getJob(jobID: UUID): SimulationMessage.Simulation {
         val job = storage.get(KEYS.JOBS.make(jobID)).first().bytes
         return SimulationMessage.Simulation.parseFrom(job)
+    }
+
+    private fun getSimulationConfiguration(simulationID: UUID): SimulationConfiguration {
+        val config = storage.get(KEYS.SIMULATIONS.make(simulationID)).first().bytes
+        return SimulationConfiguration.parseFrom(config)
     }
 
     override fun jobStatus(jobID: UUID): Pair<JobStatus, UUID> {

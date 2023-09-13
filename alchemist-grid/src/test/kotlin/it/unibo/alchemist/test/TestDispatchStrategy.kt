@@ -11,9 +11,8 @@ package it.unibo.alchemist.test
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
+import it.unibo.alchemist.boundary.grid.cluster.AlchemistClusterNode
 import it.unibo.alchemist.boundary.grid.cluster.DispatchStrategyFactory
-import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import java.util.UUID
 import java.util.stream.Collectors
 import java.util.stream.Stream
@@ -36,15 +35,6 @@ class TestDispatchStrategy : StringSpec({
     companion object {
         const val NUM_OF_SERVERS = 2L
 
-        fun serverFromUUID(uuid: UUID) = object : ClusterNode {
-            override val serverID: UUID
-                get() = uuid
-            override val metadata: Map<String, String>
-                get() = throw NotImplementedError()
-
-            override fun submitJob(simulationID: UUID, parameters: SimulationInitializer): UUID {
-                throw NotImplementedError()
-            }
-        }
+        fun serverFromUUID(uuid: UUID) = AlchemistClusterNode(uuid, mapOf())
     }
 }

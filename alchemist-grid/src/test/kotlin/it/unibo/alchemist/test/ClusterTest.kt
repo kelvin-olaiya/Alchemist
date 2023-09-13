@@ -11,7 +11,7 @@ package it.unibo.alchemist.test
 
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.ints.shouldBeExactly
+import io.kotest.matchers.collections.shouldHaveSize
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.test.utils.DistributionTestUtils.awaitServerJoin
 import it.unibo.alchemist.test.utils.DistributionTestUtils.getDockerExtension
@@ -31,7 +31,7 @@ class ClusterTest : StringSpec({
         startServers(serverConfigFile, SERVERS_TO_LAUNCH).use {
             val cluster = ClusterImpl(registry)
             eventually(10.seconds) {
-                cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH
+                cluster.nodes shouldHaveSize SERVERS_TO_LAUNCH
             }
         }
     }
@@ -43,7 +43,7 @@ class ClusterTest : StringSpec({
             awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
             serverToShutdown.close()
             eventually(10.seconds) {
-                cluster.nodes.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+                cluster.nodes shouldHaveSize SERVERS_TO_LAUNCH - 1
             }
         }
     }

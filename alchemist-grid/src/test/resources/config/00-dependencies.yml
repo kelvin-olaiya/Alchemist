@@ -2,9 +2,7 @@ incarnation: sapere
 
 launcher:
   type: DistributedExecution
-  parameters:
-    variables: []
-    distributedConfigPath: config/dependencies_test.txt
+  parameters: ["../distribution-config.yml", ["horizontalEnd", "verticalEnd"]]
 
 remote-dependencies:
   - config/dependencies_test.txt

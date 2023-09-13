@@ -56,7 +56,7 @@ class DistributionTest : StringSpec({
                 registry.simulationAssignments(simulationID).keys.size shouldBeExactly SERVERS_TO_LAUNCH
                 servers.first().close()
                 eventually(15.seconds) {
-                    registry.simulationAssignments(simulationID).keys.size shouldBeExactly SERVERS_TO_LAUNCH - 1
+                    registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH - 1
                     registry.assignedJobs(registry.nodes.first().serverID) shouldHaveSize BATCH_SIZE
                 }
             }

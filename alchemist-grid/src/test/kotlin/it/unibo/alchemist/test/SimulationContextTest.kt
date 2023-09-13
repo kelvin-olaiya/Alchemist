@@ -10,7 +10,7 @@
 package it.unibo.alchemist.test
 
 import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.ints.shouldBeExactly
+import io.kotest.matchers.maps.shouldHaveSize
 import io.kotest.matchers.shouldBe
 import it.unibo.alchemist.test.utils.DistributionTestUtils.getSimulationContext
 import org.kaikikm.threadresloader.ResourceLoader
@@ -24,7 +24,7 @@ class SimulationContextTest : StringSpec({
 
     "Simulation dependencies are correctly loaded" {
         val simulationContext = getSimulationContext(YAML_CONFIG_PATH)
-        simulationContext.dependencies.size shouldBeExactly 2
+        simulationContext.dependencies shouldHaveSize 2
         simulationContext.dependencies[DEPENDENCY_FILE_PATH] shouldBe Files.readAllBytes(
             Path.of(ResourceLoader.getResource(DEPENDENCY_FILE_PATH).toURI()),
         )
