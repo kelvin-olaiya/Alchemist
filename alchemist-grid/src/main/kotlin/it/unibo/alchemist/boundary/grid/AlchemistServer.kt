@@ -44,7 +44,15 @@ class AlchemistServer(
     private val assignedJobs = mutableMapOf<UUID, Future<*>>()
 
     init {
-        Thread(ClusterFaultDetector(registry, 1500, 3, faultDetectorStopFlag, serverID)).start()
+        Thread(
+            ClusterFaultDetector(
+                registry,
+                DEFAULT_TIMEOUT_MILLIS,
+                DEFAULT_MAX_REPLY_MISSES,
+                faultDetectorStopFlag,
+                serverID,
+            ),
+        ).start()
         val jobQueue = CommunicationQueues.JOBS.of(serverID)
         declareQueue(jobQueue)
         registerQueueConsumer(jobQueue) { _, delivery ->
@@ -124,5 +132,7 @@ class AlchemistServer(
 
     companion object {
         private val logger = LoggerFactory.getLogger(AlchemistServer::class.java)
+        private const val DEFAULT_TIMEOUT_MILLIS = 1500L
+        private const val DEFAULT_MAX_REPLY_MISSES = 3
     }
 }
