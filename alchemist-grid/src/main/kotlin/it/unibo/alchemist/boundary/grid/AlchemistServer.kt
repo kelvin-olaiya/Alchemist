@@ -89,7 +89,8 @@ class AlchemistServer(
     }
 
     private fun runSimulation(jobID: UUID, notifyTo: String) {
-        val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID)
+        val workingDirectory = registry.getJobWorkingDirectory(jobID)
+        val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID, workingDirectory)
         simulation.addStartCallback {
             registry.setJobStatus(serverID, it, JobStatus.RUNNING)
             notifyEvent(jobID, SimulationEventType.STARTED, notifyTo)

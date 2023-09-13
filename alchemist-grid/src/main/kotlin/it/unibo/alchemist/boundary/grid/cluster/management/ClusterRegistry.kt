@@ -23,6 +23,7 @@ import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationConfig
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
+import it.unibo.alchemist.boundary.grid.utils.WorkingDirectory
 import it.unibo.alchemist.core.Engine
 import it.unibo.alchemist.core.Simulation
 import it.unibo.alchemist.model.Environment
@@ -203,6 +204,13 @@ class ClusterRegistry(
         val engine = Engine(environment, simulationConfig.endStep, DoubleTime(simulationConfig.endTime))
         engine.addOutputMonitor(GlobalExporter(exports))
         return engine
+    }
+
+    override fun getJobWorkingDirectory(jobID: UUID): WorkingDirectory {
+        val simulationConfiguration = getSimulationConfiguration(simulationID(jobID))
+        val workingDirectory = WorkingDirectory()
+        workingDirectory.writeFiles(simulationConfiguration.dependenciesMap.mapValues { it.value.toByteArray() })
+        return workingDirectory
     }
 
     private fun getJob(jobID: UUID): SimulationMessage.Simulation {

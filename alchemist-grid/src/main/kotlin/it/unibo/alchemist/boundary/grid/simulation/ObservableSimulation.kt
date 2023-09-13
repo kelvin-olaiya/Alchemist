@@ -9,13 +9,16 @@
 
 package it.unibo.alchemist.boundary.grid.simulation
 
+import it.unibo.alchemist.boundary.grid.utils.WorkingDirectory
 import it.unibo.alchemist.core.Simulation
 import it.unibo.alchemist.model.Position
+import org.kaikikm.threadresloader.ResourceLoader
 import java.util.UUID
 
 class ObservableSimulation<T, P : Position<P>>(
     private val simulation: Simulation<T, P>,
     private val jobID: UUID,
+    private val workingDirectory: WorkingDirectory,
 ) : Simulation<T, P> by simulation {
 
     private val onCompleteCallbacks = mutableSetOf<(UUID) -> Unit>()
@@ -37,6 +40,7 @@ class ObservableSimulation<T, P : Position<P>>(
     override fun run() {
         onStartCallbacks.forEach { it(jobID) }
         try {
+            ResourceLoader.injectURLs(workingDirectory.url)
             simulation.play()
             simulation.run()
         } catch (e: Exception) {

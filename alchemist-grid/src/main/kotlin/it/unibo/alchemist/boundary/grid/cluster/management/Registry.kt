@@ -13,6 +13,7 @@ import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
 import it.unibo.alchemist.boundary.grid.simulation.JobStatus
 import it.unibo.alchemist.boundary.grid.simulation.SimulationBatch
 import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
+import it.unibo.alchemist.boundary.grid.utils.WorkingDirectory
 import it.unibo.alchemist.core.Simulation
 import it.unibo.alchemist.model.Position
 import java.util.Optional
@@ -106,6 +107,12 @@ interface Registry {
      * Get an instance of the [jobID] simulation.
      */
     fun <T, P : Position<P>> simulationByJobId(jobID: UUID): Simulation<T, P>
+
+    /**
+     * Get the working directory for the specified job.
+     * It will possibly contain the simulation file dependencies.
+     */
+    fun getJobWorkingDirectory(jobID: UUID): WorkingDirectory
 
     /**
      * Get the status of the [jobID].
