@@ -35,8 +35,8 @@ export:
 
 terminate:
   - type: AfterTime
-    parameters: 50000
+    parameters: 6000
 
 launcher:
   type: DistributedExecution
-  parameters: ["../alchemist-grid/src/test/resources/distribution-config.yml", [verticalEnd, horizontalEnd]]
+  parameters: ["../alchemist-grid/src/test/resources/distribution-config.yml", [verticalEnd, horizontalEnd], "./"]

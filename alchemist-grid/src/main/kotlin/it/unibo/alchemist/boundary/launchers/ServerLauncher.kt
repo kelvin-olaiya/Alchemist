@@ -14,6 +14,7 @@ import it.unibo.alchemist.boundary.grid.cluster.management.ObservableClusterRegi
 import it.unibo.alchemist.boundary.grid.cluster.storage.EtcdKVStore
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig
 import it.unibo.alchemist.boundary.launchers.ConfigurationProvider.getEtcdEndpoints
+import it.unibo.alchemist.boundary.launchers.ConfigurationProvider.getRabbitmqConfig
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -27,7 +28,7 @@ class ServerLauncher(
     private val logger = LoggerFactory.getLogger(ServerLauncher::class.java)
 
     override fun launch(loader: Loader) {
-        RabbitmqConfig.setUpConnection(ConfigurationProvider.getRabbitmqConfig(configurationPath))
+        RabbitmqConfig.setUpConnection(getRabbitmqConfig(configurationPath))
         val serverID = UUID.randomUUID()
         logger.debug("Server assigned ID: {}", serverID)
         val metadata = mapOf<String, String>()

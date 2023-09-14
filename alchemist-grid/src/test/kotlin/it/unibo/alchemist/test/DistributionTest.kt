@@ -25,6 +25,12 @@ import it.unibo.alchemist.test.utils.TestConstants.clientConfigFile
 import it.unibo.alchemist.test.utils.TestConstants.composeFilePath
 import it.unibo.alchemist.test.utils.TestConstants.registry
 import it.unibo.alchemist.test.utils.TestConstants.serverConfigFile
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.stream.Collectors
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.name
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class DistributionTest : StringSpec({
@@ -36,7 +42,7 @@ class DistributionTest : StringSpec({
             val cluster = ClusterImpl(registry)
             awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
             startClient(clientConfigFile).use {
-                until(30.seconds) {
+                until(20.seconds) {
                     registry.simulations().size == 1
                 }
                 val simulationID = registry.simulations().first()
@@ -50,7 +56,7 @@ class DistributionTest : StringSpec({
             val cluster = ClusterImpl(registry)
             awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
             startClient(clientConfigFile).use { _ ->
-                until(30.seconds) {
+                until(20.seconds) {
                     registry.simulations().size == 1
                 }
                 val simulationID = registry.simulations().first()
@@ -59,6 +65,25 @@ class DistributionTest : StringSpec({
                 eventually(15.seconds) {
                     registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH - 1
                     registry.assignedJobs(registry.nodes.first().serverID) shouldHaveSize SIMULATION_BATCH_SIZE
+                }
+            }
+        }
+    }
+
+    "Results must be made available locally" {
+        startServers(serverConfigFile, SERVERS_TO_LAUNCH).use { _ ->
+            val cluster = ClusterImpl(registry)
+            awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
+            startClient(clientConfigFile).use {
+                until(20.seconds) {
+                    registry.simulations().size == 1
+                }
+                eventually(1.minutes) {
+                    val results = Files.list(Path.of(".")).filter {
+                        it.name.startsWith("time_export")
+                    }.collect(Collectors.toList())
+                    results shouldHaveSize SIMULATION_BATCH_SIZE
+                    results.forEach { it.deleteIfExists() }
                 }
             }
         }
