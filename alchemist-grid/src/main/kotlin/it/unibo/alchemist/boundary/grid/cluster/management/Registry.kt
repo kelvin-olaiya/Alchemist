@@ -115,6 +115,11 @@ interface Registry {
     fun getJobWorkingDirectory(jobID: UUID): WorkingDirectory
 
     /**
+     * Get the job descriptor (variables names anf values) relative to the [jobID].
+     */
+    fun getJobDescriptor(jobID: UUID): String
+
+    /**
      * Get the status of the [jobID].
      */
     fun jobStatus(jobID: UUID): Pair<JobStatus, UUID>

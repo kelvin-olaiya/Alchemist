@@ -10,8 +10,19 @@
 package it.unibo.alchemist.boundary.grid.simulation
 
 import java.util.Optional
+import java.util.UUID
 
 interface SimulationResult {
+
+    /**
+     *
+     */
+    val jobID: UUID
+
+    /**
+     *
+     */
+    val jobDescriptor: String
 
     /**
      * An optional which is filled with the exception that may have been thrown.

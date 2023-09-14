@@ -43,7 +43,22 @@ class DistributedExecution @JvmOverloads constructor(
         val workerSet = cluster.workerSet(ComplexityImpl())
         logger.debug("Distributing simulation batch")
         val result = workerSet.dispatchBatch(batch)
-        result.saveAllLocaly(exportPath)
+        if (result.numOfErrors == 0) {
+            result.saveAllLocaly(exportPath)
+        } else {
+            logger.debug("# Simulation batch encountered execution errors ({})", result.numOfErrors)
+            result.results.forEach {
+                if (it.error.isPresent) {
+                    logger.debug(
+                        "Error for job {}: {}",
+                        it.jobDescriptor,
+                        it.error.get().toString(),
+                    )
+                } else {
+                    it.saveLocally(exportPath)
+                }
+            }
+        }
         logger.debug("Simulation batch completed")
     }
 

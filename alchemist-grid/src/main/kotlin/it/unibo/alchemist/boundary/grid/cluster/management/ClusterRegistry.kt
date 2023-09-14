@@ -39,6 +39,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.io.Serializable
 import java.util.Optional
 import java.util.UUID
 
@@ -102,6 +103,7 @@ class ClusterRegistry(
                 .setSimulationID(simulationID.toString())
                 .setEnvironment(serializedEnvironment)
                 .setExports(serializedExporters)
+                .setJobDescriptor(createJobDescriptor(it.variables))
                 .build()
             val jobID = UUID.randomUUID()
             storage.put(KEYS.JOBS.make(jobID), simulation.toByteArray())
@@ -109,6 +111,9 @@ class ClusterRegistry(
         }
         return jobIDToInitializers
     }
+
+    private fun createJobDescriptor(variables: Map<String, Serializable?>) =
+        variables.entries.joinToString("_") { "${it.key}-${it.value}" }
 
     override fun deleteSimulation(simulationID: UUID) {
         storage.delete(KEYS.SIMULATIONS.make(simulationID))
@@ -212,6 +217,8 @@ class ClusterRegistry(
         workingDirectory.writeFiles(simulationConfiguration.dependenciesMap.mapValues { it.value.toByteArray() })
         return workingDirectory
     }
+
+    override fun getJobDescriptor(jobID: UUID): String = getJob(jobID).jobDescriptor
 
     private fun getJob(jobID: UUID): SimulationMessage.Simulation {
         val job = storage.get(KEYS.JOBS.make(jobID)).first().bytes

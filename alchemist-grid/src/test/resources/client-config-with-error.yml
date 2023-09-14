@@ -1,0 +1,41 @@
+incarnation: sapere
+
+variables:
+  verticalEnd: &verticalEnd
+    type: LinearVariable
+    parameters: [5, 5, 6, 1]
+  horizontalEnd: &horizontalEnd
+    type: LinearVariable
+    parameters: [5, 5, 6, 1]
+
+network-model:
+  type: ConnectWithinDistance
+  parameters: [0.5]
+
+deployments:
+  type: Grid
+  parameters: [-5, -5, *horizontalEnd, *verticalEnd, 0.25, 0.25, 0.1, 0.1]
+  contents:
+    - in:
+        type: Rectangle
+        parameters: [-0.5, -0.5, 1, 1]
+      molecule: token
+  programs:
+    - time-distribution: 1
+      type: SAPEREReaction
+      actions:
+        - FailingSAPEREAction
+
+export:
+  - type: DistributedCSVExporter
+    parameters: ["time_export", 1.5]
+    data:
+      - time
+
+terminate:
+  - type: AfterTime
+    parameters: 6000
+
+launcher:
+  type: DistributedExecution
+  parameters: ["../alchemist-grid/src/test/resources/distribution-config.yml", [verticalEnd, horizontalEnd], "./"]

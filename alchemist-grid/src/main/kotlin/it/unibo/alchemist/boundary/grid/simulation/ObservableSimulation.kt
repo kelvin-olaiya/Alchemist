@@ -23,7 +23,7 @@ class ObservableSimulation<T, P : Position<P>>(
 
     private val onCompleteCallbacks = mutableSetOf<(UUID) -> Unit>()
     private val onStartCallbacks = mutableSetOf<(UUID) -> Unit>()
-    private val onErrorCallbacks = mutableSetOf<(UUID, Exception) -> Unit>()
+    private val onErrorCallbacks = mutableSetOf<(UUID, Throwable) -> Unit>()
 
     fun addStartCallback(callback: (UUID) -> Unit) {
         onStartCallbacks.add(callback)
@@ -33,7 +33,7 @@ class ObservableSimulation<T, P : Position<P>>(
         onCompleteCallbacks.add(callback)
     }
 
-    fun addOnErrorCallback(callback: (UUID, Exception) -> Unit) {
+    fun addOnErrorCallback(callback: (UUID, Throwable) -> Unit) {
         onErrorCallbacks.add(callback)
     }
 
@@ -46,6 +46,10 @@ class ObservableSimulation<T, P : Position<P>>(
         } catch (e: Exception) {
             onErrorCallbacks.forEach { it(jobID, e) }
         }
-        onCompleteCallbacks.forEach { it(jobID) }
+        if (simulation.error.isPresent) {
+            onErrorCallbacks.forEach { it(jobID, simulation.error.get()) }
+        } else {
+            onCompleteCallbacks.forEach { it(jobID) }
+        }
     }
 }

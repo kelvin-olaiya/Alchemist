@@ -16,9 +16,12 @@ import java.util.Optional
 import java.util.UUID
 
 class SimulationResultImpl(
-    val jobID: UUID,
+    override val jobID: UUID,
     private val registry: Registry,
 ) : SimulationResult {
+
+    override val jobDescriptor = registry.getJobDescriptor(jobID)
+
     override val error: Optional<Throwable> = registry.jobError(jobID)
 
     override fun saveLocally(exportPath: String) {
