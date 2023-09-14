@@ -89,26 +89,32 @@ class AlchemistServer(
     }
 
     private fun runSimulation(jobID: UUID, notifyTo: String) {
-        val workingDirectory = registry.getJobWorkingDirectory(jobID)
-        val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID, workingDirectory)
-        simulation.addStartCallback {
-            registry.setJobStatus(serverID, it, JobStatus.RUNNING)
-            notifyEvent(jobID, SimulationEventType.STARTED, notifyTo)
-            logger.debug("Started job {}", it)
-        }
-        simulation.addCompletionCallback {
-            registry.setJobStatus(serverID, it, JobStatus.DONE)
-            notifyEvent(jobID, SimulationEventType.COMPLETED, notifyTo)
-            logger.debug("Completed job {}", it)
-        }
-        simulation.addOnErrorCallback { id, error ->
-            registry.setJobFailure(serverID, id, error)
+        try {
+            val workingDirectory = registry.getJobWorkingDirectory(jobID)
+            val simulation = ObservableSimulation(registry.simulationByJobId<Any, _>(jobID), jobID, workingDirectory)
+            simulation.addStartCallback {
+                registry.setJobStatus(serverID, it, JobStatus.RUNNING)
+                notifyEvent(jobID, SimulationEventType.STARTED, notifyTo)
+                logger.debug("Started job {}", it)
+            }
+            simulation.addCompletionCallback {
+                registry.setJobStatus(serverID, it, JobStatus.DONE)
+                notifyEvent(jobID, SimulationEventType.COMPLETED, notifyTo)
+                logger.debug("Completed job {}", it)
+            }
+            simulation.addOnErrorCallback { id, error ->
+                registry.setJobFailure(serverID, id, error)
+                notifyEvent(jobID, SimulationEventType.ERROR, notifyTo)
+                logger.debug("Job {} encontered an error", id)
+            }
+            registry.setJobStatus(serverID, jobID, JobStatus.DISPATCHED)
+            val future = executor.submit(simulation)
+            assignedJobs[jobID] = future
+        } catch (e: Throwable) {
+            registry.setJobFailure(serverID, jobID, e)
             notifyEvent(jobID, SimulationEventType.ERROR, notifyTo)
-            logger.debug("Job {} encontered an error", id)
+            logger.debug("Job {} encontered an error", jobID)
         }
-        registry.setJobStatus(serverID, jobID, JobStatus.DISPATCHED)
-        val future = executor.submit(simulation)
-        assignedJobs[jobID] = future
     }
 
     private fun cancelSimulation(jobID: UUID, notifyTo: String) {
