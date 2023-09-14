@@ -24,10 +24,7 @@ class FailingSAPEREAction(node: ILsaNode?, m: MutableList<ILsaMolecule>?) : LsaA
         reaction: Reaction<MutableList<ILsaMolecule>>?,
     ): LsaAbstractAction = throw NotImplementedError()
 
-    @Suppress("DIVISION_BY_ZERO")
-    override fun execute() {
-        0 / 0
-    }
+    override fun execute() { }
 
     override fun getContext(): Context = Context.LOCAL
 }

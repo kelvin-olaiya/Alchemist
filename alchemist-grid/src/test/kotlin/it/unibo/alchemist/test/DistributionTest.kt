@@ -13,6 +13,7 @@ import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.assertions.nondeterministic.until
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.string.shouldContain
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.test.utils.DistributionTestUtils
 import it.unibo.alchemist.test.utils.DistributionTestUtils.awaitServerJoin
@@ -22,6 +23,7 @@ import it.unibo.alchemist.test.utils.DistributionTestUtils.use
 import it.unibo.alchemist.test.utils.TestConstants.SERVERS_TO_LAUNCH
 import it.unibo.alchemist.test.utils.TestConstants.SIMULATION_BATCH_SIZE
 import it.unibo.alchemist.test.utils.TestConstants.clientConfigFile
+import it.unibo.alchemist.test.utils.TestConstants.clientConfigWithErrorFile
 import it.unibo.alchemist.test.utils.TestConstants.composeFilePath
 import it.unibo.alchemist.test.utils.TestConstants.registry
 import it.unibo.alchemist.test.utils.TestConstants.serverConfigFile
@@ -84,6 +86,21 @@ class DistributionTest : StringSpec({
                     }.collect(Collectors.toList())
                     results shouldHaveSize SIMULATION_BATCH_SIZE
                     results.forEach { it.deleteIfExists() }
+                }
+            }
+        }
+    }
+
+    "Batch with errors" {
+        startServers(serverConfigFile, 2).use { _ ->
+            val cluster = ClusterImpl(registry)
+            awaitServerJoin(cluster, SERVERS_TO_LAUNCH, 10.seconds)
+            startClient(clientConfigWithErrorFile).use {
+                until(20.seconds) {
+                    registry.simulations().size == 1
+                }
+                eventually(1.minutes) {
+                    it.stdoutAsText() shouldContain "Simulation batch encountered execution errors"
                 }
             }
         }

@@ -21,6 +21,7 @@ object TestConstants {
     val serverConfigFile = Path.of("src", "test", "resources", "server-config.yml").toString()
     val clientConfigFile = Path.of("src", "test", "resources", "client-config.yml").toString()
     val wrongExporterConfigFile = Path.of("src", "test", "resources", "wrong-exporter-config.yml").toString()
+    val clientConfigWithErrorFile = Path.of("src", "test", "resources", "client-config-with-error.yml").toString()
     const val SIMULATION_BATCH_SIZE = 4
     val distributionConfigurationFile =
         Path.of("src", "test", "resources", "distribution-config.yml").toString()

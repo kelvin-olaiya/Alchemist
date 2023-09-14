@@ -46,7 +46,7 @@ class DistributedExecution @JvmOverloads constructor(
         if (result.numOfErrors == 0) {
             result.saveAllLocaly(exportPath)
         } else {
-            logger.debug("# Simulation batch encountered execution errors ({})", result.numOfErrors)
+            logger.debug("Simulation batch encountered execution errors ({})", result.numOfErrors)
             result.results.forEach {
                 if (it.error.isPresent) {
                     logger.debug(
