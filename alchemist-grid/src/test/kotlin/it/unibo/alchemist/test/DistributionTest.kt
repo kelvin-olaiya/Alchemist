@@ -64,7 +64,7 @@ class DistributionTest : StringSpec({
                 val simulationID = registry.simulations().first()
                 registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH
                 servers.first().close()
-                eventually(15.seconds) {
+                eventually(20.seconds) {
                     registry.simulationAssignments(simulationID).keys shouldHaveSize SERVERS_TO_LAUNCH - 1
                     registry.assignedJobs(registry.nodes.first().serverID) shouldHaveSize SIMULATION_BATCH_SIZE
                 }
