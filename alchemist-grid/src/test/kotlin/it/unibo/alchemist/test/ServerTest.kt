@@ -12,6 +12,7 @@ package it.unibo.alchemist.test
 import io.kotest.assertions.nondeterministic.eventually
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.collections.shouldHaveSize
 import it.unibo.alchemist.boundary.grid.cluster.ClusterImpl
 import it.unibo.alchemist.boundary.grid.communication.CommunicationQueues
 import it.unibo.alchemist.boundary.grid.communication.RabbitmqConfig.setUpConnection
@@ -54,6 +55,18 @@ class ServerTest : StringSpec({
             publishToQueue(CommunicationQueues.HEALTH.of(serverID), responseQueue, healthCheckMessage.toByteArray())
             eventually(5.seconds) {
                 replyed.shouldBeTrue()
+            }
+        }
+    }
+
+    "Server checks and removes faulty servers" {
+        startServers(serverConfigFile, 1).use {
+            val cluster = ClusterImpl(registry)
+            awaitServerJoin(cluster, 1, 10.seconds)
+            registry.addServer(UUID.randomUUID(), mapOf())
+            registry.nodes shouldHaveSize 2
+            eventually(10.seconds) {
+                registry.nodes shouldHaveSize 1
             }
         }
     }
