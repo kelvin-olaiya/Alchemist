@@ -297,6 +297,10 @@ class ClusterRegistry(
         return jobIDs.map { jobStatus(it) }.all { it.first in setOf(JobStatus.DONE, JobStatus.FAILED) }
     }
 
+    override fun close() {
+        storage.close()
+    }
+
     private fun serializeObject(obj: Any): ByteArray {
         val byteStream = ByteArrayOutputStream()
         val objectStream = ObjectOutputStream(byteStream)

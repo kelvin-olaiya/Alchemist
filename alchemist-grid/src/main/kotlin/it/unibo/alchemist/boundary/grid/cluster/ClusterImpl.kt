@@ -18,6 +18,6 @@ class ClusterImpl(
 
     override val nodes: Collection<ClusterNode> get() = registry.nodes
 
-    override fun workerSet(simulationComplexity: Complexity): Dispatcher =
+    override fun dispatcherFor(simulationComplexity: Complexity): Dispatcher =
         BatchDispatcher(nodes, DispatchStrategyFactory.roundRobin, registry)
 }

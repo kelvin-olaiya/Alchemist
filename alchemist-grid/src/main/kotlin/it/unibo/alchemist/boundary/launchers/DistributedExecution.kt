@@ -36,30 +36,33 @@ class DistributedExecution @JvmOverloads constructor(
 
     override fun launch(loader: Loader) {
         RabbitmqConfig.setUpConnection(getRabbitmqConfig(configurationPath))
-        val cluster = ClusterImpl(ObservableClusterRegistry(EtcdKVStore(getEtcdEndpoints(configurationPath))))
-        val configuration = SimulationConfigImpl(loader, Long.MAX_VALUE, Time.INFINITY)
-        val initializers = loader.variables.cartesianProductOf(variables).map(::SimulationInitializer)
-        val batch = SimulationBatchImpl(configuration, initializers)
-        val workerSet = cluster.workerSet(ComplexityImpl())
-        logger.debug("Distributing simulation batch")
-        val result = workerSet.dispatchBatch(batch)
-        if (result.numOfErrors == 0) {
-            result.saveAllLocaly(exportPath)
-        } else {
-            logger.debug("Simulation batch encountered execution errors ({})", result.numOfErrors)
-            result.results.forEach {
-                if (it.error.isPresent) {
-                    logger.debug(
-                        "Error for job {}: {}",
-                        it.jobDescriptor,
-                        it.error.get().toString(),
-                    )
-                } else {
-                    it.saveLocally(exportPath)
+        ObservableClusterRegistry(EtcdKVStore(getEtcdEndpoints(configurationPath))).use { registry ->
+            val cluster = ClusterImpl(registry)
+            val configuration = SimulationConfigImpl(loader, Long.MAX_VALUE, Time.INFINITY)
+            val initializers = loader.variables.cartesianProductOf(variables).map(::SimulationInitializer)
+            val batch = SimulationBatchImpl(configuration, initializers)
+            val workerSet = cluster.dispatcherFor(ComplexityImpl())
+            logger.debug("Distributing simulation batch")
+            val result = workerSet.dispatchBatch(batch)
+            if (result.numOfErrors == 0) {
+                result.saveAllLocaly(exportPath)
+            } else {
+                logger.debug("Simulation batch encountered execution errors ({})", result.numOfErrors)
+                result.results.forEach {
+                    if (it.error.isPresent) {
+                        logger.debug(
+                            "Error for job {}: {}",
+                            it.jobDescriptor,
+                            it.error.get().toString(),
+                        )
+                    } else {
+                        it.saveLocally(exportPath)
+                    }
                 }
             }
+            logger.debug("Simulation batch completed")
         }
-        logger.debug("Simulation batch completed")
+        RabbitmqConfig.closeConnection()
     }
 
     companion object {

@@ -16,13 +16,14 @@ import it.unibo.alchemist.boundary.grid.simulation.SimulationInitializer
 import it.unibo.alchemist.boundary.grid.utils.WorkingDirectory
 import it.unibo.alchemist.core.Simulation
 import it.unibo.alchemist.model.Position
+import java.io.Closeable
 import java.util.Optional
 import java.util.UUID
 
 /**
  * Manages the cluster functional information.
  */
-interface Registry {
+interface Registry : Closeable, AutoCloseable {
 
     /**
      * Registers a new server.

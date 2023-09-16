@@ -28,4 +28,9 @@ object RabbitmqConfig {
             it.port = config.port
         }.newConnection()
     }
+
+    fun closeConnection() {
+        channel.close()
+        connection.close()
+    }
 }
