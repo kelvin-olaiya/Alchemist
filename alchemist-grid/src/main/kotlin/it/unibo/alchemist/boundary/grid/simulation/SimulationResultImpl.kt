@@ -10,6 +10,7 @@
 package it.unibo.alchemist.boundary.grid.simulation
 
 import it.unibo.alchemist.boundary.grid.cluster.management.Registry
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.PrintStream
 import java.util.Optional
@@ -34,9 +35,15 @@ class SimulationResultImpl(
         val results = registry.resultsByJobID(jobID)
         val path = if (exportPath.endsWith(File.separator)) exportPath else "$exportPath${File.separator}"
         results.forEach {
-            val outputStream = PrintStream("$path${it.first}")
+            val fileName = "$path${it.first}"
+            val outputStream = PrintStream(fileName)
             outputStream.print(String(it.second))
             outputStream.close()
+            logger.info("The result file $fileName has been correctly saved")
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SimulationResult::class.java)
     }
 }
