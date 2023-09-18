@@ -60,7 +60,7 @@ class DistributedExecution @JvmOverloads constructor(
                     }
                 }
             }
-            logger.debug("Simulation batch completed")
+            logger.info("Simulation batch completed")
         }
         RabbitmqConfig.closeConnection()
     }
