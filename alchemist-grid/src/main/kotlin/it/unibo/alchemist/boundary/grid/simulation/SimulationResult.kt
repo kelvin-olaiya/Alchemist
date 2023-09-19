@@ -15,17 +15,18 @@ import java.util.UUID
 interface SimulationResult {
 
     /**
-     *
+     * The id of the job this result is related to.
      */
     val jobID: UUID
 
     /**
-     *
+     * The descriptor of the job this result is related to.
      */
     val jobDescriptor: String
 
     /**
-     * An optional which is filled with the exception that may have been thrown.
+     * An optional which is filled with the exception that may have been thrown
+     * during simulation execution.
      */
     val error: Optional<Throwable>
 

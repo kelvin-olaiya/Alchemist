@@ -14,12 +14,12 @@ import it.unibo.alchemist.boundary.grid.simulation.Complexity
 interface Cluster {
 
     /**
-     * A set of remote servers for the given [simulationComplexity].
+     * Returns [Dispatcher] suitable for the provided [simulationComplexity].
      */
     fun dispatcherFor(simulationComplexity: Complexity): Dispatcher
 
     /**
-     * The remote servers currently joining the cluster.
+     * The remote [ClusterNode] currently joining the cluster.
      */
     val nodes: Collection<ClusterNode>
 }

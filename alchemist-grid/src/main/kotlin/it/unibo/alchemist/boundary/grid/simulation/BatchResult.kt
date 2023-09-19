@@ -18,7 +18,7 @@ interface BatchResult {
     val numOfErrors: Int
 
     /**
-     * A collection of result of the simulations that completed either
+     * A collection of [SimulationResult] of the simulations that completed either
      * successfully or with error
      */
     val results: Collection<SimulationResult>

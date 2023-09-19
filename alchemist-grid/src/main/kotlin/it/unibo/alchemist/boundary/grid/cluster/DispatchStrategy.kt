@@ -15,7 +15,7 @@ import java.util.UUID
 interface DispatchStrategy {
 
     /**
-     * Assigns some simulation to the cluster servers.
+     * Returns a map representing a list of jobs assigned to a particular [ClusterNode].
      */
     fun makeAssignments(
         servers: List<ClusterNode>,
