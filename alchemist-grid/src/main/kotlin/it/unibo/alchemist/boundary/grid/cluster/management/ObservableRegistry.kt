@@ -14,7 +14,7 @@ import it.unibo.alchemist.boundary.grid.cluster.ClusterNode
 interface ObservableRegistry : Registry {
 
     /**
-     * Registers a listener to be called whenever a server joins the cluster.
+     * Registers a listener that will invoke each time a [ClusterNode] joins the cluster.
      */
     fun addServerJoinListener(listener: (ClusterNode) -> Unit)
 }

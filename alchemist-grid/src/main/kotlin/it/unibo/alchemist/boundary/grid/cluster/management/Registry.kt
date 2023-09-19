@@ -31,12 +31,12 @@ interface Registry : Closeable, AutoCloseable {
     fun addServer(serverID: UUID, metadata: Map<String, String>)
 
     /**
-     * Remove a server from the registry
+     * Removes a server from the registry
      */
     fun removeServer(serverID: UUID)
 
     /**
-     * Return a collection of server nodes
+     * Returns a collection of server nodes
      */
     val nodes: Collection<ClusterNode>
 
@@ -44,8 +44,9 @@ interface Registry : Closeable, AutoCloseable {
      * Submits the simulation configuration and create a job for each
      * initializer in the batch.
      *
-     * @return a [Pair] in which the first field is the simulationID and the second is
-     * Collection of UUID related to the simulation initializers.
+     * @return a [Pair] in which the first field is the simulationID assigned
+     * to the simulation configuration, and the second field is a
+     * Collection of UUID corresponding to the simulation initializers.
      */
     fun submitBatch(batch: SimulationBatch): Pair<UUID, Map<UUID, SimulationInitializer>>
 
@@ -56,82 +57,113 @@ interface Registry : Closeable, AutoCloseable {
 
     /**
      * Get the simulationID of the provided [jobID].
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun simulationID(jobID: UUID): UUID
 
     /**
-     * Returns the simulationID of the simulations submitted in the cluster.
+     * Returns a collection simulationIDs of all the simulations
+     * submitted in the registry.
      */
     fun simulations(): Collection<UUID>
 
     /**
-     * Get all the job of the provided [simulationID].
+     * Get all the jobs related to the provided [simulationID].
+     *
+     * @throws NoSuchElementException if no simulation is found with
+     * the [simulationID].
      */
     fun simulationJobs(simulationID: UUID): Collection<UUID>
 
     /**
-     * Register job assignments.
+     * Registers the assignment of job identified by [jobID] to the server identified
+     * by [serverID] assignments.
      */
     fun assignJob(jobID: UUID, serverID: UUID)
 
     /**
-     * Register job unassignment.
+     * Removes the assignment of the job identified by [jobID].
      */
     fun unassignJob(jobID: UUID)
 
     /**
-     * Register job reassignment.
+     * Reassigns the job identified by [jobID] to another server
+     * identified by [serverID].
      */
     fun reassignJob(jobID: UUID, serverID: UUID)
 
     /**
-     * Get the serverID of the server to which the job is assigned.
+     * Gets the serverID of the server to which the job identified by [jobID]
+     * is assigned.
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun assignedTo(jobID: UUID): UUID
 
     /**
-     * Get all assigned job to the [serverID].
+     * Gets all assigned job to the server identified by [serverID].
      */
     fun assignedJobs(serverID: UUID): Collection<UUID>
 
     /**
-     * Get the [simulationID] assigned job to the [serverID].
+     * Returns a collection of ids of the jobs assigned to the server identified by [serverID] related
+     * to the simulation identified by [simulationID].
      */
     fun assignedJobs(serverID: UUID, simulationID: UUID): Collection<UUID>
 
     /**
-     * Get a mapping between serverID and assigned jobID.
+     * Returns a map in which a serverID is mapped to a collection
+     * of ids of the jobs assigned to the server it identifies.
+     *
+     * @throws NoSuchElementException if no simulation is found with
+     * the [simulationID].
      */
     fun simulationAssignments(simulationID: UUID): Map<UUID, Collection<UUID>>
 
     /**
-     * Get an instance of the [jobID] simulation.
+     * Returns an instance of a simulation that will be built from the
+     * simulation configuration and the simulation initializers relative
+     * to the job identified by [jobID].
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun <T, P : Position<P>> simulationByJobId(jobID: UUID): Simulation<T, P>
 
     /**
-     * Get the working directory for the specified job.
+     * Returns the working directory for the specified job.
      * It will possibly contain the simulation file dependencies.
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun getJobWorkingDirectory(jobID: UUID): WorkingDirectory
 
     /**
-     * Get the job descriptor (variables names anf values) relative to the [jobID].
+     * Returns the job descriptor (variables names and values) for the job identified by [jobID].
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun getJobDescriptor(jobID: UUID): String
 
     /**
-     * Get the status of the [jobID].
+     * Get the status of the job identified by [jobID].
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun jobStatus(jobID: UUID): Pair<JobStatus, UUID>
 
     /**
-     * Set the [jobID] status.
+     * Sets the [JobStatus] of the job identified by [jobID].
      */
     fun setJobStatus(serverID: UUID, jobID: UUID, status: JobStatus)
 
     /**
-     * Register the failure of the job execution.
+     * Registers the failure of the job execution.
      *
      * @param serverID the server who encountered the failure.
      * @param jobID the job that failed.
@@ -140,13 +172,16 @@ interface Registry : Closeable, AutoCloseable {
     fun setJobFailure(serverID: UUID, jobID: UUID, error: Throwable)
 
     /**
-     * @return an optional which is empty if no exception was
+     * Returns an [Optional] that will be possibly filled with the exception
      * thrown during the execution of the job or is empty otherwise
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun jobError(jobID: UUID): Optional<Throwable>
 
     /**
-     * Submit a new result.
+     * Submits a simulation result.
      *
      * @param jobID the id of the job to which the result is related.
      * @param name the name (more likely the filename) of the job result.
@@ -155,12 +190,18 @@ interface Registry : Closeable, AutoCloseable {
     fun addResult(jobID: UUID, name: String, result: ByteArray)
 
     /**
-     * Get all results related to the [jobID].
+     * Returns all the results related to the job identified by [jobID].
+     *
+     * @throws NoSuchElementException if no job is found with
+     * the [jobID].
      */
     fun resultsByJobID(jobID: UUID): Collection<Pair<String, ByteArray>>
 
     /**
-     * Get all the results related to the [simulationID].
+     * Get all the results related to the simulation identified by [simulationID].
+     *
+     * @throws NoSuchElementException if no simulation is found with
+     * the [simulationID].
      */
     fun resultsBySimulationID(simulationID: UUID): Collection<Pair<String, ByteArray>>
 
@@ -171,6 +212,9 @@ interface Registry : Closeable, AutoCloseable {
 
     /**
      * Check if all the simulation have completed either with success or with errors.
+     *
+     * @throws NoSuchElementException if no simulation is found with
+     * the [simulationID].
      */
     fun isComplete(simulationID: UUID): Boolean
 }
